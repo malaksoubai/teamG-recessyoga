@@ -36,43 +36,54 @@ export default function ProfilePage() {
   return (
     <div className="flex gap-6 p-8 min-h-screen bg-[#F1F5F0]">
 
-      {/* Sidebar */}
-      <Card className="w-[260px] h-fit">
+     {/* Sidebar */}
+      <Card className="w-20 md:w-1/4 h-fit transition-all">
         <CardContent className="p-3 space-y-3 text-lg text-[color:var(--secondary-foreground)]">
-          <Button variant="secondary" className="w-full justify-start gap-3 py-8 border-l-[var(--secondary-foreground)] border-l-2">
+         
+          {/* personal info */}
+          <Button variant="secondary" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8 border-l-[var(--secondary-foreground)] border-l-2">
             <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <User color="white"/>
+              <User color="white" />
             </div>
-            <div className="flex flex-col items-start leading-tight">
+            <div className="hidden md:flex flex-col items-start leading-tight min-w-0 flex-1">
               <span className="font-medium">Personal Info</span>
-              <span className="text-xs text-muted-foreground">Update your account details</span>
+              <span className="text-xs text-muted-foreground text-wrap text-start">
+                Update your account details
+              </span>
             </div>
           </Button>
 
-          <Button variant="ghost" className="w-full justify-start gap-3 py-8">
+          {/* notifications */}
+          <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8">
             <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <Bell color="white"/>
+              <Bell color="white" />
             </div>
-            <div className="flex flex-col items-start leading-tight">
+            <div className="hidden md:flex flex-col items-start leading-tight">
               <span className="font-medium">Notifications</span>
-              <span className="text-xs text-muted-foreground">Manage your preferences</span>
+              <span className="text-xs text-muted-foreground text-wrap text-start">
+                Manage your preferences
+              </span>
             </div>
           </Button>
 
-          <Button variant="ghost" className="w-full justify-start gap-3 py-8">
+          {/* specializations */}
+          <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8" >
             <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <Award color="white"/>
+              <Award color="white" />
             </div>
-            <div className="flex flex-col items-start leading-tight">
+            <div className="hidden md:flex flex-col items-start leading-tight">
               <span className="font-medium">Specializations</span>
-              <span className="text-xs text-muted-foreground">Update your qualifications</span>
+              <span className="text-xs text-muted-foreground text-wrap text-start">
+                Update your qualifications
+              </span>
             </div>
           </Button>
+
         </CardContent>
       </Card>
 
       {/* Main Card */}
-      <Card className="flex-1 max-w-4xl">
+      <Card className="flex-1 w-4xl">
         <CardHeader className="text-[color:var(--secondary-foreground)]">
           <CardTitle className="text-xl">Personal Information</CardTitle>
           <CardDescription>
