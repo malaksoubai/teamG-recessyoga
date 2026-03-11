@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import Link from "next/link"
 // icons
 import { User } from 'lucide-react';
 import { Bell } from 'lucide-react';
@@ -55,6 +56,7 @@ export default function ProfilePage() {
 
           {/* notifications */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8">
+            <Link href="/user-profile/notifications" className="flex w-full items-center gap-3">
             <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
               <Bell color="white" />
             </div>
@@ -64,6 +66,7 @@ export default function ProfilePage() {
                 Manage your preferences
               </span>
             </div>
+            </Link>
           </Button>
 
           {/* specializations */}
@@ -83,15 +86,19 @@ export default function ProfilePage() {
       </Card>
 
       {/* Main Card */}
-      <Card className="flex-1 w-4xl">
-        <CardHeader className="text-[color:var(--secondary-foreground)]">
-          <CardTitle className="text-xl">Personal Information</CardTitle>
-          <CardDescription>
-            Update your account details and password
-          </CardDescription>
-          <Separator className="my-4" />
+      <Card className="flex-1 w-4xl h-fit">
+        <CardHeader className="text-[color:var(--secondary-foreground)] flex gap-4 w-full justify-center md:justify-start">
+            <div className="flex items-center justify-center bg-[color:var(--secondary)] aspect-square rounded-lg p-3">
+              <User color="var(--secondary-foreground)" size={30}/>
+            </div>
+            <div className="flex-col items-start leading-tight">
+              <CardTitle className="text-xl">Personal Information</CardTitle>
+              <CardDescription>Update your account details and password</CardDescription>
+            </div>
         </CardHeader>
 
+        <Separator className="mx-4 my-2" />
+        
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
@@ -117,7 +124,7 @@ export default function ProfilePage() {
             <Separator className="my-4" />
 
             {/* Password Section */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="text-[color:var(--secondary-foreground)]">
                 <p className="text-base font-semibold">Change Password </p>
                 <p>Leave blank to keep your current password</p>
@@ -143,7 +150,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full py-5">
+            <Button type="submit" className="w-full py-5 hover:bg-(var:--accent-foreground) my-4">
               Save Changes
             </Button>
 
