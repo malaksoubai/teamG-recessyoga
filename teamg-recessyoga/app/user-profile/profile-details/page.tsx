@@ -43,43 +43,47 @@ export default function ProfilePage() {
          
           {/* personal info */}
           <Button variant="secondary" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8 border-l-[var(--secondary-foreground)] border-l-2">
-            <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <User color="white" />
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-tight min-w-0 flex-1">
-              <span className="font-medium">Personal Info</span>
-              <span className="text-xs text-muted-foreground text-wrap text-start">
-                Update your account details
-              </span>
-            </div>
+            <Link href="/user-profile/profile-details" className="flex w-full items-center gap-3">
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <User color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight min-w-0 flex-1">
+                <span className="font-medium">Personal Info</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Update your account details
+                </span>
+              </div>
+            </Link>
           </Button>
 
           {/* notifications */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8">
             <Link href="/user-profile/notifications" className="flex w-full items-center gap-3">
-            <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <Bell color="white" />
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-tight">
-              <span className="font-medium">Notifications</span>
-              <span className="text-xs text-muted-foreground text-wrap text-start">
-                Manage your preferences
-              </span>
-            </div>
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <Bell color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight">
+                <span className="font-medium">Notifications</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Manage your preferences
+                </span>
+              </div>
             </Link>
           </Button>
 
           {/* specializations */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8" >
-            <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <Award color="white" />
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-tight">
-              <span className="font-medium">Specializations</span>
-              <span className="text-xs text-muted-foreground text-wrap text-start">
-                Update your qualifications
-              </span>
-            </div>
+            <Link href="/user-profile/specializations" className="flex w-full items-center gap-3">
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <Award color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight">
+                <span className="font-medium">Specializations</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Update your qualifications
+                </span>
+              </div>
+            </Link>
           </Button>
 
         </CardContent>

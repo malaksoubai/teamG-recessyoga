@@ -43,6 +43,7 @@ export default function NotificationPage() {
 
   const [emailEnabled, setEmailEnabled] = React.useState(false)
   const [smsEnabled, setSmsEnabled] = React.useState(false)
+  const [phone, setPhone] = React.useState("");
   function onSubmit(data: FormData) {
     console.log(data)
   }
@@ -57,44 +58,46 @@ export default function NotificationPage() {
           {/* personal info */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8">
             <Link href="/user-profile/profile-details" className="flex w-full items-center gap-3">
-            <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <User color="white" />
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-tight min-w-0 flex-1">
-              <span className="font-medium">Personal Info</span>
-              <span className="text-xs text-muted-foreground text-wrap text-start">
-                Update your account details
-              </span>
-            </div>
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <User color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight min-w-0 flex-1">
+                <span className="font-medium">Personal Info</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Update your account details
+                </span>
+              </div>
             </Link>
           </Button>
 
           {/* notifications */}
           <Button variant="secondary" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8 border-l-[var(--secondary-foreground)] border-l-2">
             <Link href="/user-profile/notifications" className="flex w-full items-center gap-3">
-            <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <Bell color="white" />
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-tight">
-              <span className="font-medium">Notifications</span>
-              <span className="text-xs text-muted-foreground text-wrap text-start">
-                Manage your preferences
-              </span>
-            </div>
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <Bell color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight">
+                <span className="font-medium">Notifications</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Manage your preferences
+                </span>
+              </div>
             </Link>
           </Button>
 
           {/* specializations */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8" >
-            <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
-              <Award color="white" />
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-tight">
-              <span className="font-medium">Specializations</span>
-              <span className="text-xs text-muted-foreground text-wrap text-start">
-                Update your qualifications
-              </span>
-            </div>
+            <Link href="/user-profile/specializations" className="flex w-full items-center gap-3">
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <Award color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight">
+                <span className="font-medium">Specializations</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Update your qualifications
+                </span>
+              </div>
+            </Link>
           </Button>
 
         </CardContent>
@@ -118,12 +121,13 @@ export default function NotificationPage() {
 
           <FieldGroup onSubmit={handleSubmit(onSubmit)} className="space-y-2">
 
-            <FieldLabel
-              className={`p-2 rounded-xl border transition-all ${
-                emailEnabled
-                  ? "border-[color:var(--secondary-foreground)] bg-[color:var(--primary)]/20"
-                  : "border-border"
-              }`}>
+          <FieldLabel
+            className={`p-2 rounded-xl border transition-all ${
+              emailEnabled
+                ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
+                : "!border-gray-200 !bg-white"
+            }`}
+          >
               <Field orientation="horizontal">
                 <div className="bg-[color:var(--secondary-foreground)] rounded-lg p-3">
                   <Mail color="white" />
@@ -138,7 +142,8 @@ export default function NotificationPage() {
                   </div>
                 </FieldContent>
 
-                <Checkbox id="email-checkbox"
+                <Checkbox
+                  id="email-checkbox"
                   checked={emailEnabled}
                   onCheckedChange={(value) => setEmailEnabled(!!value)}
                 />
@@ -148,9 +153,10 @@ export default function NotificationPage() {
             <FieldLabel
               className={`p-2 rounded-xl border transition-all ${
                 smsEnabled
-                ? "border-[color:var(--secondary-foreground)] bg-[color:var(--primary)]/20"
-                : "border-border"
-              }`}>
+                  ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
+                  : "!border-gray-200 !bg-white"
+              }`}
+            >
                 <Field orientation="horizontal">
                   <div className="bg-[color:var(--secondary-foreground)] rounded-lg p-3">
                     <Phone color="white" />
@@ -165,7 +171,9 @@ export default function NotificationPage() {
                     </div>
                   </FieldContent>
 
-                  <Checkbox checked={smsEnabled}
+                  <Checkbox
+                    id="sms-checkbox"
+                    checked={smsEnabled}
                     onCheckedChange={(value) => setSmsEnabled(!!value)}
                   />
                 </Field>
@@ -175,10 +183,21 @@ export default function NotificationPage() {
                     <Separator/>
                     <div className="pl-20 w-full">
                       <div className="flex gap-3 items-center w-full my-2">
-                        <Input id="form-phone" type="tel" placeholder="+1 (555) 123-4567" className="flex-1" />
-                        <Button variant="destructive" className="border-red-400">
-                          Remove
-                        </Button>
+                      <Input
+                        id="form-phone"
+                        type="tel"
+                        placeholder="+1 (555) 123-4567"
+                        className="flex-1"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />                        
+                      <Button
+                    variant="destructive"
+                    className="border-red-400"
+                    onClick={() => setPhone("")}
+                  >
+                    Remove
+                  </Button>
                       </div>
 
                       <div className="bg-green-100 text-green-700 w-full text-sm p-3 rounded-lg">
