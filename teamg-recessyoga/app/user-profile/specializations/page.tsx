@@ -116,28 +116,29 @@ export default function NotificationPage() {
         <Separator className="mx-4 my-2" />
         
         <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+                {yogaStyles.map((style) => {
+                    const checked = selectedStyles.includes(style);
 
-        <div className="grid grid-cols-2 gap-4">
-            {yogaStyles.map((style) => {
-                const checked = selectedStyles.includes(style);
+                    return (
+                    <Label key={style}
+                        className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all
+                        ${checked
+                            ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
+                            : "!border-gray-200 !bg-white"}
+                        `}>
+                        <span className="font-medium">{style}</span>
 
-                return (
-                <Label key={style}
-                    className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all
-                    ${checked
-                        ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
-                        : "!border-gray-200 !bg-white"}
-                    `}>
-                    <span className="font-medium">{style}</span>
-
-                    <Checkbox checked={checked}
-                        onCheckedChange={() => toggleStyle(style)}
-                    />
-                </Label>
-                );
-            })}
-        </div>
-
+                        <Checkbox checked={checked}
+                            onCheckedChange={() => toggleStyle(style)}
+                        />
+                    </Label>
+                    );
+                })}
+            </div>
+            <div className="mt-6 rounded-xl border p-4 text-sm text-muted-foreground text-center">
+                {selectedStyles.length} styles selected
+            </div>
           <Button type="submit" className="w-full py-5 hover:bg-(var:--accent-foreground) my-4">
             Save Changes
           </Button>
