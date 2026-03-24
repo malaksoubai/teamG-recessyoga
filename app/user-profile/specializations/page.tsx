@@ -16,7 +16,12 @@ import { Award } from 'lucide-react';
 export function Example() {
   const [checked, setChecked] = React.useState(false)
  
-  return <Checkbox checked={checked} onCheckedChange={setChecked} />
+  return (
+    <Checkbox
+      checked={checked}
+      onCheckedChange={(value) => setChecked(value === true)}
+    />
+  )
 }
 export default function NotificationPage() {
   const yogaStyles = [
