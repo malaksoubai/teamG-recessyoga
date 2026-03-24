@@ -30,13 +30,16 @@ type FormData = {
 export function Example() {
   const [checked, setChecked] = React.useState(false)
  
-  return <Checkbox checked={checked} onCheckedChange={setChecked} />
+  return (
+    <Checkbox
+      checked={checked}
+      onCheckedChange={(value) => setChecked(value === true)}
+    />
+  )
 }
 export default function NotificationPage() {
   const { register, handleSubmit } = useForm<FormData>({
     defaultValues: {
-      firstName: "Jane",
-      lastName: "Doe",
       email: "j@example.com",
     },
   })
