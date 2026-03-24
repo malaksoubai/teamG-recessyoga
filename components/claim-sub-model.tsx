@@ -21,21 +21,21 @@ import { Clock, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
 
 // All class type groups — matches client spec
 const CLASS_TYPE_OPTIONS = [
-  { label: "Other (Default)", value: "other", group: null },
-  { label: "Vin to Yin", value: "vin-to-yin", group: "Group 1" },
-  { label: "Yogatha Sadhana", value: "yogatha-sadhana", group: "Group 2" },
-  { label: "Ashtanga", value: "ashtanga", group: "Group 2" },
-  { label: "Accessible Ashtanga", value: "accessible-ashtanga", group: "Group 2" },
-  { label: "Yin", value: "yin", group: "Group 3" },
-  { label: "Somatic Flow", value: "somatic-flow", group: "Group 3" },
-  { label: "Hatha", value: "hatha", group: "Group 4" },
-  { label: "Slow Flow", value: "slow-flow", group: "Group 4" },
-  { label: "Meditation and Flow", value: "meditation-and-flow", group: "Group 4" },
-  { label: "Sculpt Flow", value: "sculpt-flow", group: "Group 5" },
-  { label: "Core Barre", value: "core-barre", group: "Group 6" },
-  { label: "Mat Pilates", value: "mat-pilates", group: "Group 7" },
-  { label: "Strength and Conditioning", value: "strength-and-conditioning", group: "Group 8" },
-  { label: "Vinyasa", value: "vinyasa", group: "Group 1" },
+  { label: "Other (Default)", value: "other"},
+  { label: "Vin to Yin", value: "vin-to-yin"},
+  { label: "Yogatha Sadhana", value: "yogatha-sadhana"},
+  { label: "Ashtanga", value: "ashtanga"},
+  { label: "Accessible Ashtanga", value: "accessible-ashtanga"},
+  { label: "Yin", value: "yin"},
+  { label: "Somatic Flow", value: "somatic-flow"},
+  { label: "Hatha", value: "hatha"},
+  { label: "Slow Flow", value: "slow-flow"},
+  { label: "Meditation and Flow", value: "meditation-and-flow"},
+  { label: "Sculpt Flow", value: "sculpt-flow"},
+  { label: "Core Barre", value: "core-barre"},
+  { label: "Mat Pilates", value: "mat-pilates"},
+  { label: "Strength and Conditioning", value: "strength-and-conditioning"},
+  { label: "Vinyasa", value: "vinyasa"},
 ];
 
 type UrgencyLevel = "less-than-24h" | "within-72h" | "within-week" | "over-week";
@@ -54,6 +54,7 @@ interface SubRequest {
 interface ClaimSubstituteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onClaim: (classTypeOption: "maintain" | "change") => void;
   subRequest: SubRequest;
 }
 
@@ -67,6 +68,7 @@ const URGENCY_CONFIG: Record<UrgencyLevel, { label: string; color: string; icon:
 export default function ClaimSubstituteModal({
   open,
   onOpenChange,
+  onClaim,
   subRequest,
 }: ClaimSubstituteModalProps) {
   const [classTypeOption, setClassTypeOption] = useState<"maintain" | "change">("maintain");
@@ -77,14 +79,14 @@ export default function ClaimSubstituteModal({
   const isClassChange = classTypeOption === "change";
 
   const handleConfirm = () => {
-    // TODO: wire to Supabase
-    const payload = {
+  const payload = {
       requestId: subRequest.id,
       classTypeOption,
       newClassType: isClassChange ? newClassType : null,
       notes,
     };
     console.log("Claiming sub request:", payload);
+    onClaim(classTypeOption);
     onOpenChange(false);
   };
 
@@ -194,9 +196,6 @@ export default function ClaimSubstituteModal({
                     {CLASS_TYPE_OPTIONS.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         <span>{type.label}</span>
-                        {type.group && (
-                          <span className="ml-2 text-xs text-gray-400">({type.group})</span>
-                        )}
                       </SelectItem>
                     ))}
                   </SelectContent>

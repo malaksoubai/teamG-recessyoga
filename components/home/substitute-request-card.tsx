@@ -1,4 +1,5 @@
-import Link from "next/link";
+"use client"
+
 import {
   AlertCircle,
   Check,
@@ -8,14 +9,20 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SubstituteRequestMock } from "@/lib/mock-substitute-requests";
+import { Button } from "../ui/button";
+import { useState } from "react";
+import ClaimSubstituteModal from "@/components/claim-sub-model"
 
 type SubstituteRequestCardProps = {
   request: SubstituteRequestMock;
 };
 
 export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
+  const [claimOpen, setClaimOpen] = useState(false)  
   const topBorder =
     request.borderTop === "urgent" ? "border-t-[#880808]" : "border-t-[#1e461f]";
+
+  const [status, setStatus] = useState<"idle" | "pending" | "claimed">("idle")
 
   return (
     <article
@@ -87,13 +94,46 @@ export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
           </div>
         ) : null}
 
-        <Link
-          href="/substitute-request"
+        {/* <Button
+          onClick={() => setClaimOpen(true)}
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Check className="size-4" aria-hidden />
           Claim Substitute
-        </Link>
+        </Button> */}
+
+        <Button
+          onClick={() => status === "idle" && setClaimOpen(true)}
+          disabled={status !== "idle"}
+          className={cn(
+            "mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-opacity",
+            status === "idle" && "bg-black text-white hover:opacity-90",
+            status === "pending" && "bg-amber-100 text-amber-700 cursor-not-allowed",
+            status === "claimed" && "bg-[#1e461f] text-white cursor-not-allowed",
+          )}
+        >
+          <Check className="size-4" aria-hidden />
+          {status === "idle" && "Claim Substitute"}
+          {status === "pending" && "Pending Approval"}
+          {status === "claimed" && "Substitute Claimed"}
+        </Button>
+
+        <ClaimSubstituteModal
+          open={claimOpen}
+          onOpenChange={setClaimOpen}
+          onClaim={(classTypeOption) => setStatus(classTypeOption === "change" ? "pending" : "claimed")}
+          subRequest={{
+            id: request.id,
+            requestedBy: request.requestedBy,
+            date: request.dateTime,
+            time: request.dateTime,
+            location: request.location,
+            classType: request.title,
+            teacherNotes: request.note,
+            urgency: request.urgency?.kind === "urgent" ? "less-than-24h" : "over-week",
+          }}
+        />
+
       </div>
     </article>
   );
