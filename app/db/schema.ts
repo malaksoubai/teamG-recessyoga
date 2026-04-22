@@ -51,6 +51,7 @@ export const profiles = pgTable('profiles', {
   phone: text('phone'),
   bio: text('bio'),
   isAdmin: boolean('is_admin').notNull().default(false),
+  approved: boolean('approved').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   notificationPreference: notificationPreferenceEnum('notification_preference')
     .notNull()
