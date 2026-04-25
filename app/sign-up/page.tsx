@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { User, Check } from "lucide-react";
-
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -229,13 +229,16 @@ export default function SignUpPage() {
 
                     <p className="text-center text-sm text-[#7d837a]">
                         Already have an account?{" "}
-                        <Button
+                        <Link href="/login">
+                             <Button
                         type="button"
                         variant="link"
                         className="h-auto p-0 font-medium text-[#4d5c49] underline underline-offset-2"
                         >
                         Sign in
                         </Button>
+                        </Link>
+                       
                     </p>
                     </div>
                 ) : (
