@@ -18,7 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { notifySubRequest } from "@/app/notifications/notify-sub-request";
+import { createCoverageRequest } from "@/app/actions/create-coverage-request";
 
+// TODO update this component to match the schema 
+// TODO e.g. LOCATIONS AND CLASSTYPES needs to be wired to db schema 
 const STUDIO_LOCATIONS = [
   "Carrboro Studio",
   "Durham Studio",
@@ -61,11 +65,23 @@ export default function RequestSubstituteModal({
     comment: "",
   });
 
-  const handleSubmit = () => {
-    // TODO: wire to Supabase
-    console.log("Submitting request:", form);
-    onOpenChange(false);
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      await createCoverageRequest(form)
+      onOpenChange(false)
+    } catch (err) {
+      console.error("Failed to submit request:", err)
+      setError("Something went wrong submitting your request. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleCancel = () => {
     setForm({
@@ -205,11 +221,17 @@ export default function RequestSubstituteModal({
 
         {/* Actions */}
         <div className="flex gap-3 mt-2">
+          {error && (
+            <div className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
           <Button
             onClick={handleSubmit}
-            className="flex-1 bg-[#4a5e4a] hover:bg-[#3d4f3d] text-white font-medium rounded-lg"
+            disabled={isSubmitting}
+            className="flex-1 bg-[#4a5e4a] hover:bg-[#3d4f3d] text-white font-medium rounded-lg disabled:opacity-50"
           >
-            Submit Request
+            {isSubmitting ? "Submitting..." : "Submit Request"}
           </Button>
           <Button
             variant="outline"

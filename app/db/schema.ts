@@ -13,6 +13,9 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 
+import { relations } from "drizzle-orm"
+
+
 // Reference Supabase auth.users
 const auth = pgSchema('auth');
 
@@ -170,3 +173,18 @@ export const coverageRequests = pgTable(
     ),
   })
 );
+
+export const coverageRequestRelations = relations(coverageRequests, ({ one }) => ({
+  location: one(locations, {
+    fields: [coverageRequests.locationId],
+    references: [locations.id],
+  }),
+  originalClassType: one(classTypes, {
+    fields: [coverageRequests.originalClassTypeId],
+    references: [classTypes.id],
+  }),
+  requestedBy: one(profiles, {
+    fields: [coverageRequests.requestedByInstructorId],
+    references: [profiles.id],
+  }),
+}))
