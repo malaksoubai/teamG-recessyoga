@@ -10,9 +10,9 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 const db = drizzle(pool, { schema });
 
 async function main() {
-  console.log('\n🔍 Testing your backend setup...\n');
+  console.log('\n Testing your backend setup...\n');
 
-  // ── 1. DB Connection ───────────────────────────────────────────────────────
+  //  1. DB Connection 
   try {
     await db.execute(sql`SELECT 1`);
     console.log(' 1. Database connection: OK');
@@ -22,7 +22,7 @@ async function main() {
     process.exit(1);
   }
 
-  // ── 2. class_types seeded ─────────────────────────────────────────────────
+  //  2. class_types seeded 
   try {
     const classTypes = await db.query.classTypes.findMany();
     if (classTypes.length === 0) {
@@ -36,7 +36,7 @@ async function main() {
     console.error(' 2. Could not query class_types:', e);
   }
 
-  // ── 3. profiles table accessible ──────────────────────────────────────────
+  //  3. profiles table accessible 
   try {
     const count = await db.execute(
       sql`SELECT COUNT(*) FROM public.profiles`
@@ -46,7 +46,7 @@ async function main() {
     console.error(' 3. profiles table not accessible:', e);
   }
 
-  // ── 4. RLS enabled check ───────────────────────────────────────────────────
+  //  4. RLS enabled check 
   try {
     const rlsCheck = await db.execute(sql`
       SELECT tablename, rowsecurity

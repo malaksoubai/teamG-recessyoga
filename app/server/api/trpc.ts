@@ -18,13 +18,13 @@ import { db } from '@/app/server/db';
 import { profiles } from '@/app/db/schema';
 import { eq } from 'drizzle-orm';
 
-// ─── Subject type ────────────────────────────────────────────────────────────
+//  Subject type 
 
 export type Subject = {
   id: string; // = auth.uid()
 };
 
-// ─── Context ─────────────────────────────────────────────────────────────────
+//  Context 
 
 interface CreateContextOptions {
   subject: Subject | null;
@@ -50,7 +50,7 @@ export const createTRPCContext = async (_opts: { req: Request }) => {
   });
 };
 
-// ─── tRPC initialisation ──────────────────────────────────────────────────────
+//  tRPC initialization 
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
@@ -70,7 +70,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 export const createCallerFactory = t.createCallerFactory;
 export const createTRPCRouter = t.router;
 
-// ─── Timing middleware (dev latency sim) ──────────────────────────────────────
+//  Timing middleware (dev latency sim) 
 
 const timingMiddleware = t.middleware(async ({ next, path }) => {
   const start = Date.now();
@@ -86,7 +86,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   return result;
 });
 
-// ─── Procedures ───────────────────────────────────────────────────────────────
+// = Procedures 
 
 /** No auth required. */
 export const publicProcedure = t.procedure.use(timingMiddleware);

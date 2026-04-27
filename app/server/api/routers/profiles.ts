@@ -7,7 +7,7 @@
  *  getPendingProfiles  – adminProcedure     – list all unapproved profiles
  *  approveProfile      – adminProcedure     – set approved = true for a profile
  *
- * Handoff contract with Person 1 (Vy / frontend):
+ * Handoff contract to Vy / frontend):
  *  - After supabase.auth.signUp() succeeds, frontend calls createProfile.
  *  - After login, frontend calls getCurrentProfile to determine redirect:
  *      profile not found          → show "complete profile" page
@@ -30,7 +30,7 @@ import {
 } from '@/app/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-// ─── Zod schemas ──────────────────────────────────────────────────────────────
+//  Zod schemas 
 
 const ProfileResponse = z.object({
   id: z.string().uuid(),
@@ -59,7 +59,7 @@ const ProfileIdInput = z.object({
   profileId: z.string().uuid(),
 });
 
-// ─── getCurrentProfile ────────────────────────────────────────────────────────
+//  getCurrentProfile 
 
 /**
  * Returns the currently authenticated instructor's profile.
@@ -90,7 +90,7 @@ const getCurrentProfile = protectedProcedure
     return ProfileResponse.parse(profile);
   });
 
-// ─── createProfile ────────────────────────────────────────────────────────────
+//  createProfile 
 
 /**
  * Called by the frontend immediately after supabase.auth.signUp() succeeds.
@@ -160,7 +160,7 @@ const createProfile = protectedProcedure
     }
   });
 
-// ─── getPendingProfiles ───────────────────────────────────────────────────────
+//  getPendingProfiles 
 
 /**
  * Admin only.
@@ -177,7 +177,7 @@ const getPendingProfiles = adminProcedure
     return ProfileResponse.array().parse(pending);
   });
 
-// ─── approveProfile ───────────────────────────────────────────────────────────
+//  approveProfile 
 
 /**
  * Admin only.
@@ -206,7 +206,7 @@ const approveProfile = adminProcedure
       .where(eq(profiles.id, profileId));
   });
 
-// ─── Router ───────────────────────────────────────────────────────────────────
+//  Router 
 
 export const profilesApiRouter = createTRPCRouter({
   getCurrentProfile,
