@@ -28,7 +28,7 @@ import {
   classTypes,
   instructorQualifications,
 } from '@/app/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 
 //  Zod schemas 
 
@@ -206,11 +206,90 @@ const approveProfile = adminProcedure
       .where(eq(profiles.id, profileId));
   });
 
-//  Router 
+//  updateProfile
+
+const updateProfile = protectedProcedure
+  .input(z.object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    email: z.string().email(),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+    await db
+      .update(profiles)
+      .set({ firstName: input.firstName, lastName: input.lastName, email: input.email, updatedAt: new Date() })
+      .where(eq(profiles.id, subject.id));
+  });
+
+//  updateNotificationPreference
+
+const updateNotificationPreference = protectedProcedure
+  .input(z.object({
+    notificationPreference: z.enum(['email', 'sms']),
+    phone: z.string().nullable(),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+    await db
+      .update(profiles)
+      .set({ notificationPreference: input.notificationPreference, phone: input.phone, updatedAt: new Date() })
+      .where(eq(profiles.id, subject.id));
+  });
+
+//  updateQualifications
+
+const updateQualifications = protectedProcedure
+  .input(z.object({
+    classTypeNames: z.array(z.string()),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+
+    const allClassTypes = await db.query.classTypes.findMany();
+    const nameToId = new Map(allClassTypes.map((ct) => [ct.name.trim().toLowerCase(), ct.id]));
+
+    const newIds = input.classTypeNames
+      .map((n) => nameToId.get(n.trim().toLowerCase()))
+      .filter((id): id is number => id !== undefined);
+
+    await db
+      .delete(instructorQualifications)
+      .where(eq(instructorQualifications.instructorId, subject.id));
+
+    if (newIds.length > 0) {
+      await db
+        .insert(instructorQualifications)
+        .values(newIds.map((classTypeId) => ({ instructorId: subject.id, classTypeId })))
+        .onConflictDoNothing();
+    }
+  });
+
+//  getMyQualifications
+
+const getMyQualifications = protectedProcedure
+  .output(z.array(z.string()))
+  .query(async ({ ctx }) => {
+    const { subject } = ctx;
+
+    const rows = await db
+      .select({ name: classTypes.name })
+      .from(instructorQualifications)
+      .innerJoin(classTypes, eq(instructorQualifications.classTypeId, classTypes.id))
+      .where(eq(instructorQualifications.instructorId, subject.id));
+
+    return rows.map((r) => r.name);
+  });
+
+//  Router
 
 export const profilesApiRouter = createTRPCRouter({
   getCurrentProfile,
   createProfile,
   getPendingProfiles,
   approveProfile,
+  getMyQualifications,
+  updateProfile,
+  updateNotificationPreference,
+  updateQualifications,
 });

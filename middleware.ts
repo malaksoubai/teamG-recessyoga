@@ -12,7 +12,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /** Routes accessible without being signed in. */
-const PUBLIC_ROUTES = ['/login', '/sign-up'];
+const PUBLIC_ROUTES = ['/login', '/sign-up', '/pending-approval', '/auth/callback'];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

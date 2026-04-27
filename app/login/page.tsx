@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { trpc } from "@/lib/trpc/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +16,42 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canSubmit = email.length > 0 && password.length > 0;
 
-  const handleLogin = () => {
-    // TODO: replace with real auth later
-    console.log("Logging in with:", { email, password });
+  const getCurrentProfile = trpc.profiles.getCurrentProfile.useQuery(undefined, {
+    enabled: false, // only run manually
+  });
 
-    router.push("/");
+  const handleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      // Check profile state to decide where to redirect.
+      const result = await getCurrentProfile.refetch();
+      const profile = result.data;
+
+      if (!profile) {
+        // Signed in but no profile row — shouldn't happen normally.
+        router.push("/sign-up");
+      } else if (!profile.approved) {
+        router.push("/pending-approval");
+      } else if (profile.isAdmin) {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Invalid email or password.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,13 +101,17 @@ export default function LoginPage() {
                 />
               </div>
 
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
+
               {/* Login button */}
               <Button
                 onClick={handleLogin}
-                disabled={!canSubmit}
+                disabled={!canSubmit || isLoading}
                 className="h-12 w-full rounded-xl bg-black text-white hover:opacity-90"
               >
-                Sign In
+                {isLoading ? "Signing in..." : "Sign In"}
               </Button>
 
               {/* Back to signup */}

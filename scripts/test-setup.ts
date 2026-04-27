@@ -55,12 +55,14 @@ async function main() {
         AND tablename IN ('profiles', 'class_types', 'locations', 'coverage_requests', 'instructor_qualifications')
       ORDER BY tablename
     `);
-    const allOn = rlsCheck.rows.every((r: { rowsecurity: boolean }) => r.rowsecurity);
+    type RLSRow = { tablename: string; rowsecurity: boolean };
+    const rows = rlsCheck.rows as RLSRow[];
+    const allOn = rows.every((r) => r.rowsecurity);
     if (allOn) {
       console.log('4. RLS enabled on all tables');
     } else {
       console.log(' 4. RLS check — some tables:');
-      rlsCheck.rows.forEach((r: { tablename: string; rowsecurity: boolean }) => {
+      rows.forEach((r) => {
         console.log(`      ${r.tablename}: RLS ${r.rowsecurity ? 'ON' : 'OFF'}`);
       });
       console.log('   → Run 001_rls_policies.sql in Supabase SQL Editor');
