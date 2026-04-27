@@ -1,4 +1,6 @@
 "use client"
+import { supabase } from '@/lib/supabaseClient'
+import { useEffect } from "react"
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
 import { useForm } from "react-hook-form"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -22,18 +24,57 @@ type FormData = {
 }
 
 export default function ProfilePage() {
-  const { register, handleSubmit } = useForm<FormData>({
-    defaultValues: {
-      firstName: "John",
-      lastName: "Doe",
-      email: "j@example.com",
-    },
-  })
+  const { register, handleSubmit, reset } = useForm<FormData>()
 
-  function onSubmit(data: FormData) {
-    console.log(data)
+  async function onSubmit(data: FormData) {
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData?.user
+
+    if (!user) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+      })
+      .eq('id', user.id)
+  
+    if (error) {
+      console.error("Update failed:", error)
+    } else {
+      alert("Profile updated successfully!")
+    }
   }
 
+  useEffect(() => { loadProfile()}, [])
+
+  async function loadProfile() {
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !userData?.user) {
+      console.error("No user found")
+      return
+    }
+
+    const user = userData.user
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error("Error loading profile:", error)
+      return
+    }
+
+    reset({
+      firstName: data.first_name,
+      lastName: data.last_name,
+      email: data.email,
+    })
+  }
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
     
