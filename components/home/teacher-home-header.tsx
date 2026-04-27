@@ -7,7 +7,7 @@ const LOGO_HEIGHT = 450;
 
 export function TeacherHomeHeader() {
   return (
-    <header className="flex items-start justify-between gap-4">
+    <header className="flex items-start justify-between gap-4 ">
       <div className="min-w-0">
         <Link
           href="/"
