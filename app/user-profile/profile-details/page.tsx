@@ -1,6 +1,6 @@
 "use client"
 import { supabase } from '@/lib/supabaseClient'
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
 import { useForm } from "react-hook-form"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -25,6 +25,7 @@ type FormData = {
 
 export default function ProfilePage() {
   const { register, handleSubmit, reset } = useForm<FormData>()
+  const [profile, setProfile] = useState<any>(null)
 
   async function onSubmit(data: FormData) {
     const { data: userData } = await supabase.auth.getUser()
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   useEffect(() => { loadProfile()}, [])
 
   async function loadProfile() {
+    
     const { data: userData, error: userError } = await supabase.auth.getUser()
 
     if (userError || !userData?.user) {
@@ -69,11 +71,7 @@ export default function ProfilePage() {
       return
     }
 
-    reset({
-      firstName: data.first_name,
-      lastName: data.last_name,
-      email: data.email,
-    })
+    setProfile(data)
   }
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
@@ -156,19 +154,28 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="my-2">First Name</Label>
-                <Input {...register("firstName")} />
+                <Input
+                  placeholder={profile?.first_name || ""}
+                  {...register("firstName")}
+                />
               </div>
 
               <div>
                 <Label className="my-2">Last Name</Label>
-                <Input {...register("lastName")} />
+                <Input
+                  placeholder={profile?.last_name || ""}
+                  {...register("lastName")}
+                />
               </div>
             </div>
 
             {/* Email */}
             <div>
               <Label className="my-2">Email Address</Label>
-              <Input type="email" {...register("email")} />
+              <Input type="email"
+                placeholder={profile?.email || ""}
+                {...register("email")}
+              />
             </div>
 
             <Separator className="my-4" />
