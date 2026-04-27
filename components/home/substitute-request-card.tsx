@@ -8,13 +8,13 @@ import {
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SubstituteRequestMock } from "@/lib/mock-substitute-requests";
+import type { SubstituteRequestCardData } from "@/lib/substitute-requests";
 import { Button } from "../ui/button";
 import { useState } from "react";
 import ClaimSubstituteModal from "@/components/claim-sub-model"
 
 type SubstituteRequestCardProps = {
-  request: SubstituteRequestMock;
+  request: SubstituteRequestCardData;
 };
 
 export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {

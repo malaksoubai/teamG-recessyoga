@@ -23,6 +23,7 @@ export default function Home() {
         <ClaimSubstituteModal
           open={claimOpen}
           onOpenChange={setClaimOpen}
+          onClaim={() => setClaimOpen(false)}
           subRequest={{
             id: "1",
             requestedBy: "Sarah",
