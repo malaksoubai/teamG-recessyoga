@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { notifySubRequest } from "@/app/notifications/notify-sub-request";
 import { createCoverageRequest } from "@/app/actions/create-coverage-request";
 
 // TODO update this component to match the schema 
@@ -73,11 +72,19 @@ export default function RequestSubstituteModal({
     setError(null)
 
     try {
-      await createCoverageRequest(form)
+      const result = await createCoverageRequest(form)
+      if (!result.ok) {
+        setError(result.message)
+        return
+      }
       onOpenChange(false)
     } catch (err) {
       console.error("Failed to submit request:", err)
-      setError("Something went wrong submitting your request. Please try again.")
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong submitting your request. Please try again.",
+      )
     } finally {
       setIsSubmitting(false)
     }
