@@ -125,12 +125,12 @@ export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
           subRequest={{
             id: request.id,
             requestedBy: request.requestedBy,
-            date: request.dateTime,
-            time: request.dateTime,
+            date: request.modalCalendarDate,
+            time: request.modalTimeRange,
             location: request.location,
             classType: request.title,
             teacherNotes: request.note,
-            urgency: request.urgency?.kind === "urgent" ? "less-than-24h" : "over-week",
+            urgency: request.claimModalUrgency,
           }}
         />
 
