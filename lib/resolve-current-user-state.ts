@@ -19,8 +19,8 @@ export function currentUserStateFromProfileRow(
   row: ProfileGateRow | null | undefined
 ): CurrentUserState {
   if (!row) return "no_profile"
-  if (!row.isActive) return "pending"
   if (row.isAdmin) return "admin"
+  if (!row.isActive) return "rejected"
   if (row.approved) return "approved"
   return "pending"
 }

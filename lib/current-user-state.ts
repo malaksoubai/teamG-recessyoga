@@ -7,6 +7,8 @@ export type CurrentUserState =
   | "pending"
   | "approved"
   | "admin"
+  /** Profile exists but account is inactive (e.g. application denied). */
+  | "rejected"
 
 export type CurrentUserStateResponse = {
   state: CurrentUserState

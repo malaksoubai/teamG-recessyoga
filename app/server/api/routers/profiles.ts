@@ -4,10 +4,11 @@
  * Procedures:
  *  getCurrentProfile   – protectedProcedure – fetch the signed-in user's profile
  *  createProfile       – protectedProcedure – insert profile + qualifications after sign-up
- *  getPendingProfiles  – adminProcedure     – list all unapproved profiles
- *  approveProfile      – adminProcedure     – set approved = true for a profile
+ *  getPendingProfiles  – adminProcedure     – list all unapproved active profiles
+ *  approveProfile      – adminProcedure     – set approved + active for a profile
+ *  denyProfile         – adminProcedure     – deactivate profile (no app access)
  *
- * Handoff contract to Vy / frontend):
+ * Handoff contract (frontend):
  *  - After supabase.auth.signUp() succeeds, frontend calls createProfile.
  *  - After login, frontend calls getCurrentProfile to determine redirect:
  *      profile not found          → show "complete profile" page
@@ -41,6 +42,7 @@ const ProfileResponse = z.object({
   bio: z.string().nullable(),
   isAdmin: z.boolean(),
   approved: z.boolean(),
+  isActive: z.boolean(),
   notificationPreference: z.enum(['email', 'sms']),
   createdAt: z.date(),
 });
@@ -202,7 +204,52 @@ const approveProfile = adminProcedure
 
     await db
       .update(profiles)
-      .set({ approved: true, updatedAt: new Date() })
+      .set({ approved: true, isActive: true, updatedAt: new Date() })
+      .where(eq(profiles.id, profileId));
+  });
+
+//  denyProfile
+
+/**
+ * Admin only. Deactivates the profile so the user cannot use the app (login
+ * redirects to account rejected). Pending list only includes active rows.
+ */
+const denyProfile = adminProcedure
+  .input(ProfileIdInput)
+  .mutation(async ({ ctx, input }) => {
+    const { profileId } = input;
+    if (profileId === ctx.subject.id) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'You cannot deny your own account.',
+      });
+    }
+
+    const target = await db.query.profiles.findFirst({
+      where: eq(profiles.id, profileId),
+    });
+
+    if (!target) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found.',
+      });
+    }
+
+    if (target.isAdmin) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Cannot deny an administrator account.',
+      });
+    }
+
+    await db
+      .update(profiles)
+      .set({
+        approved: false,
+        isActive: false,
+        updatedAt: new Date(),
+      })
       .where(eq(profiles.id, profileId));
   });
 
@@ -288,6 +335,7 @@ export const profilesApiRouter = createTRPCRouter({
   createProfile,
   getPendingProfiles,
   approveProfile,
+  denyProfile,
   getMyQualifications,
   updateProfile,
   updateNotificationPreference,

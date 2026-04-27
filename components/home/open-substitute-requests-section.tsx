@@ -1,17 +1,22 @@
 "use client";
 
+import { AdminSubstituteRequestCard } from "@/components/home/admin-substitute-request-card";
 import { SubstituteRequestCard } from "@/components/home/substitute-request-card";
-import type { SubstituteRequestCardData } from "@/lib/substitute-requests";
 import type { OpenSubstituteRequestsStatus } from "@/hooks/use-open-substitute-requests";
+import type { SubstituteRequestCardData } from "@/lib/substitute-requests";
 
 type OpenSubstituteRequestsSectionProps = {
   items: SubstituteRequestCardData[];
   status: OpenSubstituteRequestsStatus;
+  viewer?: "instructor" | "admin";
+  onRequestsUpdated?: () => void | Promise<void>;
 };
 
 export function OpenSubstituteRequestsSection({
   items,
   status,
+  viewer = "instructor",
+  onRequestsUpdated,
 }: OpenSubstituteRequestsSectionProps) {
   return (
     <section className="space-y-4" aria-labelledby="open-requests-heading">
@@ -38,7 +43,14 @@ export function OpenSubstituteRequestsSection({
         <ul className="flex flex-col gap-6 sm:gap-8">
           {items.map((req) => (
             <li key={req.id} className="min-w-0">
-              <SubstituteRequestCard request={req} />
+              {viewer === "admin" ? (
+                <AdminSubstituteRequestCard
+                  request={req}
+                  onUpdated={onRequestsUpdated}
+                />
+              ) : (
+                <SubstituteRequestCard request={req} />
+              )}
             </li>
           ))}
         </ul>

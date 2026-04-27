@@ -9,6 +9,8 @@ export function redirectPathForCurrentUserState(state: CurrentUserState): string
       return "/"
     case "pending":
       return "/pending-approval"
+    case "rejected":
+      return "/account-rejected"
     case "no_profile":
       return "/complete-profile"
   }
