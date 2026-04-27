@@ -4,9 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
-import { createClient } from "@/app/supabase/client"
-import type { CurrentUserState } from "@/lib/current-user-state"
-import { redirectPathForCurrentUserState } from "@/lib/post-login-redirect"
+import { createClient } from "@/lib/supabase/client"
+import { trpc } from "@/lib/trpc/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,56 +16,44 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const canSubmit = email.length > 0 && password.length > 0 && !loading
+  const getCurrentProfile = trpc.profiles.getCurrentProfile.useQuery(undefined, {
+    enabled: false,
+  })
+
+  const canSubmit =
+    email.trim().length > 0 && password.length > 0 && !isLoading
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setIsLoading(true)
     setError(null)
-    setLoading(true)
     try {
       const supabase = createClient()
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
-      if (signInError) {
-        setError(signInError.message)
-        return
-      }
+      if (signInError) throw signInError
 
-      const profileRes = await fetch("/api/profile-state", {
-        credentials: "include",
-        cache: "no-store",
-      })
-      if (!profileRes.ok) {
-        setError(
-          profileRes.status === 401
-            ? "Signed in but session was not recognized. Try again."
-            : "Could not load your account status. Try again."
-        )
-        return
-      }
-      const body = (await profileRes.json()) as { state?: CurrentUserState }
-      const state = body.state
-      if (
-        state !== "admin" &&
-        state !== "approved" &&
-        state !== "pending" &&
-        state !== "no_profile"
-      ) {
-        setError("Unexpected account status from server.")
-        return
-      }
+      const result = await getCurrentProfile.refetch()
+      const profile = result.data
 
-      router.refresh()
-      router.push(redirectPathForCurrentUserState(state))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      if (!profile) {
+        router.push("/sign-up")
+      } else if (!profile.approved) {
+        router.push("/pending-approval")
+      } else if (profile.isAdmin) {
+        router.push("/admin")
+      } else {
+        router.push("/")
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Invalid email or password.")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -133,7 +120,7 @@ export default function LoginPage() {
                   disabled={!canSubmit}
                   className="h-12 w-full rounded-xl bg-black text-white hover:opacity-90"
                 >
-                  {loading ? "Signing in…" : "Sign In"}
+                  {isLoading ? "Signing in…" : "Sign In"}
                 </Button>
               </form>
 

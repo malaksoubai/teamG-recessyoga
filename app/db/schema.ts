@@ -71,7 +71,6 @@ export const classTypes = pgTable('class_types', {
   id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),
   description: text('description'),
-  durationMinutes: integer('duration_minutes'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),

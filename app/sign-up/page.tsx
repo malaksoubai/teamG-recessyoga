@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { User, Check } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { createClient } from "@/lib/supabase/client";
 
 const classTypes = [
     "Hatha",
@@ -28,7 +30,10 @@ const classTypes = [
 type NotificationPreference = "email" | "sms";
 
 export default function SignUpPage() {
+    const router = useRouter();
     const [step, setStep] = useState<1 | 2>(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -39,11 +44,6 @@ export default function SignUpPage() {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [selectedClassTypes, setSelectedClassTypes] = useState<string[]>([]);
 
-    const [emailCode, setEmailCode] = useState("");
-    const [smsCode, setSmsCode] = useState("");
-
-    const [emailVerified, setEmailVerified] = useState(false);
-    const [smsVerified, setSmsVerified] = useState(false);
 
     const canContinueToStep2 = useMemo(() => {
         if (!email || !password || !firstName || !lastName) return false;
@@ -59,32 +59,33 @@ export default function SignUpPage() {
         );
     };
 
-    const handleVerifyEmail = () => {
-        if (emailCode.trim().length > 0) {
-        setEmailVerified(true);
+    // Called when "Continue" is clicked. It creates the Supabase auth account and attaches profile data as user metadata so the auth callback route can insert the profile after the user clicks the confirmation link in their email.
+    const handleContinue = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        firstName,
+                        lastName,
+                        phone: notificationPreference === "sms" ? phoneNumber : null,
+                        notificationPreference,
+                        selectedClassTypeNames: selectedClassTypes,
+                    },
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+            setStep(2);
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Something went wrong.");
+        } finally {
+            setIsLoading(false);
         }
-    };
-
-    const handleVerifySms = () => {
-        if (smsCode.trim().length > 0) {
-        setSmsVerified(true);
-        }
-    };
-
-    const handleCreateAccount = () => {
-        const payload = {
-        email,
-        password,
-        firstName,
-        lastName,
-        notificationPreference,
-        phoneNumber: notificationPreference === "sms" ? phoneNumber : "",
-        selectedClassTypes,
-        emailVerified,
-        smsVerified: notificationPreference === "sms" ? smsVerified : false
-        };
-
-        console.log("Frontend-only signup payload:", payload);
     };
 
     return (
@@ -218,13 +219,17 @@ export default function SignUpPage() {
                         </div>
                     </div>
 
+                    {error && (
+                        <p className="text-sm text-red-500">{error}</p>
+                    )}
+
                     <Button
                         type="button"
-                        onClick={() => setStep(2)}
-                        disabled={!canContinueToStep2}
+                        onClick={handleContinue}
+                        disabled={!canContinueToStep2 || isLoading}
                         className="mt-2 h-12 w-full rounded-xl bg-black text-sm font-medium text-white hover:opacity-90"
                     >
-                        Continue
+                        {isLoading ? "Sending code..." : "Continue"}
                     </Button>
 
                     <p className="text-center text-sm text-[#7d837a]">
@@ -242,104 +247,32 @@ export default function SignUpPage() {
                     </p>
                     </div>
                 ) : (
-                    <div className="space-y-5">
-                    <VerificationCard
-                        title="Email Notifications"
-                        subtitle={`Receive substitute requests and updates via email at ${
-                        email || "j@example.com"
-                        }`}
-                        verified={emailVerified}
-                    >
-                        <div className="space-y-3">
-                        <Label
-                            htmlFor="email-code"
-                            className="block text-sm font-medium text-[#4b5049]"
-                        >
-                            Enter Verification Code
-                        </Label>
-                        <div className="flex flex-col gap-3 sm:flex-row">
-                            <Input
-                            id="email-code"
-                            value={emailCode}
-                            onChange={(e) => setEmailCode(e.target.value)}
-                            placeholder="123456"
-                            className="h-12 flex-1 border-[#d9ddd7] focus-visible:ring-0 focus-visible:ring-offset-0"
-                            />
-                            <Button
-                            type="button"
-                            onClick={handleVerifyEmail}
-                            className="h-12 rounded-lg bg-[#7e8774] px-5 text-white hover:opacity-90"
-                            >
-                            Verify
-                            </Button>
+                    <div className="space-y-6 text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#eef1ea] text-3xl">
+                            ✉️
                         </div>
-                        </div>
-                    </VerificationCard>
-
-                    {notificationPreference === "sms" && (
-                        <VerificationCard
-                        title="Text Messages (SMS)"
-                        subtitle="Get instant notifications via text message for urgent requests"
-                        verified={smsVerified}
-                        >
-                        <div className="space-y-4">
-                            <InputField
-                            id="verification-phone-number"
-                            label="Phone Number"
-                            placeholder="1234567890"
-                            value={phoneNumber}
-                            onChange={setPhoneNumber}
-                            type="tel"
-                            />
-
-                            <div className="space-y-3">
-                            <Label
-                                htmlFor="sms-code"
-                                className="block text-sm font-medium text-[#4b5049]"
-                            >
-                                Verification Code
-                            </Label>
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                                <Input
-                                id="sms-code"
-                                value={smsCode}
-                                onChange={(e) => setSmsCode(e.target.value)}
-                                placeholder="000000"
-                                className="h-12 flex-1 border-[#d9ddd7] focus-visible:ring-0 focus-visible:ring-offset-0"
-                                />
-                                <Button
-                                type="button"
-                                onClick={handleVerifySms}
-                                className="h-12 rounded-lg bg-[#7e8774] px-5 text-white hover:opacity-90"
-                                >
-                                Verify
-                                </Button>
-                            </div>
-                            <p className="text-xs text-[#8b9188]">
-                                Skip and use email only →
+                        <div>
+                            <h2 className="text-lg font-medium text-[#4a5149]">
+                                Check your email
+                            </h2>
+                            <p className="mt-2 text-sm text-[#7d837a]">
+                                We sent a confirmation link to{" "}
+                                <span className="font-medium text-[#4a5149]">{email}</span>.
+                                Click the link to confirm your account — you will be
+                                redirected automatically.
                             </p>
-                            </div>
                         </div>
-                        </VerificationCard>
-                    )}
-
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                        <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setStep(1)}
-                        className="w-full rounded-xl border border-[#d6dad3] px-5 py-3.5 text-sm font-medium text-[#444a42] hover:bg-[#f7f8f5] sm:w-1/3 sm:py-4"
-                        >
-                        Back
-                        </Button>
-                        <Button
-                        type="button"
-                        onClick={handleCreateAccount}
-                        className="w-full rounded-xl bg-black px-5 py-3.5 text-sm font-medium text-white hover:opacity-90 sm:w-2/3 sm:py-4"
-                        >
-                        Create Account
-                        </Button>
-                    </div>
+                        <p className="text-xs text-[#9b9f98]">
+                            Didn&apos;t get it? Check your spam folder or{" "}
+                            <button
+                                type="button"
+                                onClick={() => setStep(1)}
+                                className="underline underline-offset-2 text-[#4d5c49]"
+                            >
+                                go back
+                            </button>{" "}
+                            to try again.
+                        </p>
                     </div>
                 )}
                 </CardContent>
