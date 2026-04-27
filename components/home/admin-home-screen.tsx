@@ -6,11 +6,19 @@ import { Plus } from "lucide-react"
 import { AdminHomeBadges } from "@/components/home/admin-home-badges"
 import { AdminHomeHeader } from "@/components/home/admin-home-header"
 import { OpenSubstituteRequestsSection } from "@/components/home/open-substitute-requests-section"
+import { useOpenSubstituteRequests } from "@/hooks/use-open-substitute-requests"
 import RequestSubstituteModal from "@/components/request-sub-model"
 import { Button } from "@/components/ui/button"
 
 export function AdminHomeScreen() {
   const [requestOpen, setRequestOpen] = useState(false)
+  const {
+    items,
+    status,
+    urgentCount,
+    openCount,
+    pendingApprovalCount,
+  } = useOpenSubstituteRequests()
 
   return (
     <div className="min-h-screen w-full bg-[#ffffff] text-[#1b1b1b]">
@@ -18,7 +26,12 @@ export function AdminHomeScreen() {
         <AdminHomeHeader />
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 lg:mt-8">
-          <AdminHomeBadges />
+          <AdminHomeBadges
+            urgentCount={urgentCount}
+            pendingApprovalCount={pendingApprovalCount}
+            openCount={openCount}
+            loading={status === "loading"}
+          />
 
           <Button
             onClick={() => setRequestOpen(true)}
@@ -31,7 +44,7 @@ export function AdminHomeScreen() {
         </div>
 
         <div className="mt-8">
-          <OpenSubstituteRequestsSection />
+          <OpenSubstituteRequestsSection items={items} status={status} />
         </div>
       </div>
     </div>

@@ -1,44 +1,18 @@
- "use client";
+"use client";
 
 import { SubstituteRequestCard } from "@/components/home/substitute-request-card";
-import {
-  type SubstituteRequestCardData,
-} from "@/lib/substitute-requests";
-import { useEffect, useState } from "react";
+import type { SubstituteRequestCardData } from "@/lib/substitute-requests";
+import type { OpenSubstituteRequestsStatus } from "@/hooks/use-open-substitute-requests";
 
-export function OpenSubstituteRequestsSection() {
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [items, setItems] = useState<SubstituteRequestCardData[]>([]);
+type OpenSubstituteRequestsSectionProps = {
+  items: SubstituteRequestCardData[];
+  status: OpenSubstituteRequestsStatus;
+};
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadRequests() {
-      try {
-        const response = await fetch("/api/substitute-requests", {
-          cache: "no-store",
-        });
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
-        }
-
-        const data: SubstituteRequestCardData[] = await response.json();
-        if (!isMounted) return;
-        setItems(data);
-        setStatus("ready");
-      } catch (error) {
-        console.error("Failed to load open substitute requests:", error);
-        if (!isMounted) return;
-        setStatus("error");
-      }
-    }
-
-    loadRequests();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
+export function OpenSubstituteRequestsSection({
+  items,
+  status,
+}: OpenSubstituteRequestsSectionProps) {
   return (
     <section className="space-y-4" aria-labelledby="open-requests-heading">
       <h1
