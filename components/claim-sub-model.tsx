@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Clock, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
 
+// TODO update this component to match the schema 
+// TODO e.g. CLASSTYPES needs to be connected to db!! 
 // All class type groups — matches client spec
 const CLASS_TYPE_OPTIONS = [
   { label: "Other (Default)", value: "other"},

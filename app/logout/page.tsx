@@ -9,10 +9,10 @@ export default function LogoutPage() {
         session.
       </p>
       <Link
-        href="/"
+        href="/login"
         className="mt-8 rounded-xl bg-[#1e461f] px-5 py-2.5 text-sm font-semibold text-white"
       >
-        Return home
+        Sign In
       </Link>
     </div>
   );

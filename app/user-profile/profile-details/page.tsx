@@ -1,5 +1,5 @@
 "use client"
-
+import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
 import { useForm } from "react-hook-form"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,9 +35,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex gap-6 p-8 min-h-screen bg-[#F1F5F0]">
+    <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
+    
+    <div className="p-8 pb-4 bg-[color:var(--background)]">
+      <TeacherHomeHeader />
+    </div>
 
-     {/* Sidebar */}
+    {/* Sidebar*/}
+    <div className="flex gap-6 p-8 pt-4">
       <Card className="w-20 md:w-1/4 h-fit transition-all">
         <CardContent className="p-3 space-y-3 text-lg text-[color:var(--secondary-foreground)]">
          
@@ -161,7 +166,7 @@ export default function ProfilePage() {
           </form>
         </CardContent>
       </Card>
-
+</div>
     </div>
   )
 }
