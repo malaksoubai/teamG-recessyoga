@@ -9,9 +9,7 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "db:seed:test-sub": "npx tsx scripts/seed-open-coverage-request.ts",
-    "db:seed:pending-instructor": "npx tsx scripts/seed-pending-instructor-for-admin.ts"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
