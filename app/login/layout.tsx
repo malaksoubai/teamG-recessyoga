@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 
-import { createClient } from "@/app/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { redirectPathForCurrentUserState } from "@/lib/post-login-redirect"
 import { resolveCurrentUserStateForUserId } from "@/lib/resolve-current-user-state"
 
@@ -11,7 +11,7 @@ export default async function LoginLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

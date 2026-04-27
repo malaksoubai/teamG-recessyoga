@@ -1,6 +1,10 @@
+/**
+ * Server-side profile gate (same DB as tRPC). Client login uses
+ * `trpc.profiles.getCurrentProfile`; layouts/pages use this + cookies session.
+ */
 import { eq } from "drizzle-orm"
 
-import { db } from "@/app/db"
+import { db } from "@/app/server/db"
 import { profiles } from "@/app/db/schema"
 import type { CurrentUserState } from "@/lib/current-user-state"
 

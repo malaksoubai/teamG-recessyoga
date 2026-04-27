@@ -18,3 +18,6 @@ const pool = new Pool({
 });
 
 export const db = drizzle(pool, { schema });
+
+/** Same tables as `db` — for queries that need explicit table refs (e.g. aliases). */
+export { schema };

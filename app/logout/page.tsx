@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-import { createClient } from "@/app/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LogoutPage() {
   const router = useRouter()

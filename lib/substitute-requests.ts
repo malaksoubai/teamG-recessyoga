@@ -2,7 +2,7 @@ import "server-only"
 
 import { aliasedTable, desc, eq, inArray } from "drizzle-orm"
 
-import { db, schema } from "@/app/db"
+import { db, schema } from "@/app/server/db"
 
 export type UrgencyKind = "urgent" | "within72"
 

@@ -1,5 +1,6 @@
 /**
- * Matches backend contract: api.profiles.getCurrentUserState (tRPC) — call only when a Supabase session exists.
+ * High-level gate for server layouts/pages (same rules as `profiles.getCurrentProfile` + DB row).
+ * Use only when a Supabase session already exists.
  */
 export type CurrentUserState =
   | "no_profile"
