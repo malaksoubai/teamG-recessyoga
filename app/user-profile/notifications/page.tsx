@@ -1,6 +1,6 @@
 "use client"
+import { useEffect, useState } from "react"
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
-import { useForm } from "react-hook-form"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
-import React from "react"
+import { trpc } from "@/lib/trpc/client"
 // icons
 import { User } from 'lucide-react';
 import { Bell } from 'lucide-react';
@@ -24,36 +24,49 @@ import { Mail } from 'lucide-react';
 import { Phone } from 'lucide-react';
 
 
-type FormData = {
-  email: string
-}
-export function Example() {
-  const [checked, setChecked] = React.useState(false)
- 
-  return (
-    <Checkbox
-      checked={checked}
-      onCheckedChange={(value) => setChecked(value === true)}
-    />
-  )
-}
 export default function NotificationPage() {
-  const { register, handleSubmit } = useForm<FormData>({
-    defaultValues: {
-      email: "j@example.com",
-    },
-  })
+  const { data: profile, isLoading } = trpc.profiles.getCurrentProfile.useQuery();
+  const updateNotificationPreference = trpc.profiles.updateNotificationPreference.useMutation();
 
-  const [emailEnabled, setEmailEnabled] = React.useState(false)
-  const [smsEnabled, setSmsEnabled] = React.useState(false)
-  const [phone, setPhone] = React.useState("");
-  function onSubmit(data: FormData) {
-    console.log(data)
-  }
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [smsEnabled, setSmsEnabled] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setEmailEnabled(profile.notificationPreference === "email");
+      setSmsEnabled(profile.notificationPreference === "sms");
+      setPhone(profile.phone ?? "");
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    const preference = smsEnabled ? "sms" : "email";
+
+    if (smsEnabled && !phone.trim()) {
+      setSaveError("Please enter a phone number for SMS notifications.");
+      return;
+    }
+
+    try {
+      await updateNotificationPreference.mutateAsync({
+        notificationPreference: preference,
+        phone: smsEnabled ? phone.trim() : null,
+      });
+      setSaveSuccess(true);
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "Failed to save changes.");
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
-    
+
     <div className="p-8 pb-4 bg-[color:var(--background)]">
       <TeacherHomeHeader />
     </div>
@@ -62,7 +75,7 @@ export default function NotificationPage() {
     <div className="flex gap-6 p-8 pt-4">
       <Card className="w-20 md:w-1/4 h-fit transition-all">
         <CardContent className="p-3 space-y-3 text-lg text-[color:var(--secondary-foreground)]">
-         
+
           {/* personal info */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8">
             <Link href="/user-profile/profile-details" className="flex w-full items-center gap-3">
@@ -124,10 +137,12 @@ export default function NotificationPage() {
         </CardHeader>
 
         <Separator className="mx-4 my-2" />
-        
-        <CardContent>
 
-          <FieldGroup onSubmit={handleSubmit(onSubmit)} className="space-y-2">
+        <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading...</p>
+          ) : (
+          <FieldGroup className="space-y-2">
 
           <FieldLabel
             className={`p-2 rounded-xl border transition-all ${
@@ -145,7 +160,7 @@ export default function NotificationPage() {
                   <div className="hidden md:flex flex-col items-start leading-tight">
                     <FieldTitle>Email notifications</FieldTitle>
                     <FieldDescription>
-                      Receive notifications at j@example.com
+                      Receive notifications at {profile?.email ?? "your email"}
                     </FieldDescription>
                   </div>
                 </FieldContent>
@@ -153,7 +168,10 @@ export default function NotificationPage() {
                 <Checkbox
                   id="email-checkbox"
                   checked={emailEnabled}
-                  onCheckedChange={(value) => setEmailEnabled(!!value)}
+                  onCheckedChange={(value) => {
+                    setEmailEnabled(!!value);
+                    if (value) setSmsEnabled(false);
+                  }}
                 />
               </Field>
             </FieldLabel>
@@ -182,7 +200,10 @@ export default function NotificationPage() {
                   <Checkbox
                     id="sms-checkbox"
                     checked={smsEnabled}
-                    onCheckedChange={(value) => setSmsEnabled(!!value)}
+                    onCheckedChange={(value) => {
+                      setSmsEnabled(!!value);
+                      if (value) setEmailEnabled(false);
+                    }}
                   />
                 </Field>
 
@@ -198,29 +219,34 @@ export default function NotificationPage() {
                         className="flex-1"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                      />                        
+                      />
                       <Button
-                    variant="destructive"
-                    className="border-red-400"
-                    onClick={() => setPhone("")}
-                  >
-                    Remove
-                  </Button>
-                      </div>
-
-                      <div className="bg-green-100 text-green-700 w-full text-sm p-3 rounded-lg">
-                        Phone number verified
+                        type="button"
+                        variant="destructive"
+                        className="border-red-400"
+                        onClick={() => setPhone("")}
+                      >
+                        Remove
+                      </Button>
                       </div>
                     </div>
-                    
                   </>
                 )}
             </FieldLabel>
-          </FieldGroup>
 
-          <Button type="submit" className="w-full py-5 hover:bg-(var:--accent-foreground) my-4">
-            Save Changes
-          </Button>
+            {saveError && <p className="text-sm text-red-500">{saveError}</p>}
+            {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
+
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={updateNotificationPreference.isPending}
+              className="w-full py-5 hover:bg-(var:--accent-foreground) my-4"
+            >
+              {updateNotificationPreference.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </FieldGroup>
+          )}
 
         </CardContent>
       </Card>

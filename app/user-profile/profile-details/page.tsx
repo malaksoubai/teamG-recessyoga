@@ -1,6 +1,4 @@
 "use client"
-import { supabase } from '@/lib/supabaseClient'
-import { useEffect, useState } from "react"
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
 import { useForm } from "react-hook-form"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
@@ -9,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
+import { trpc } from "@/lib/trpc/client"
+import { createClient } from "@/lib/supabase/client"
 // icons
 import { User } from 'lucide-react';
 import { Bell } from 'lucide-react';
@@ -24,58 +24,21 @@ type FormData = {
 }
 
 export default function ProfilePage() {
-  const { register, handleSubmit, reset } = useForm<FormData>()
-  const [profile, setProfile] = useState<any>(null)
+  const { register, handleSubmit } = useForm<FormData>({
+    defaultValues: {
+      firstName: "John",
+      lastName: "Doe",
+      email: "j@example.com",
+    },
+  })
 
-  async function onSubmit(data: FormData) {
-    const { data: userData } = await supabase.auth.getUser()
-    const user = userData?.user
-
-    if (!user) return
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        first_name: data.firstName,
-        last_name: data.lastName,
-        email: data.email,
-      })
-      .eq('id', user.id)
-  
-    if (error) {
-      console.error("Update failed:", error)
-    } else {
-      alert("Profile updated successfully!")
-    }
+  function onSubmit(data: FormData) {
+    console.log(data)
   }
 
-  useEffect(() => { loadProfile()}, [])
-
-  async function loadProfile() {
-    
-    const { data: userData, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !userData?.user) {
-      console.error("No user found")
-      return
-    }
-
-    const user = userData.user
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, email')
-      .eq('id', user.id)
-      .single()
-
-    if (error) {
-      console.error("Error loading profile:", error)
-      return
-    }
-
-    setProfile(data)
-  }
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
-    
+
     <div className="p-8 pb-4 bg-[color:var(--background)]">
       <TeacherHomeHeader />
     </div>
@@ -84,7 +47,7 @@ export default function ProfilePage() {
     <div className="flex gap-6 p-8 pt-4">
       <Card className="w-20 md:w-1/4 h-fit transition-all">
         <CardContent className="p-3 space-y-3 text-lg text-[color:var(--secondary-foreground)]">
-         
+
           {/* personal info */}
           <Button variant="secondary" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8 border-l-[var(--secondary-foreground)] border-l-2">
             <Link href="/user-profile/profile-details" className="flex w-full items-center gap-3">
@@ -146,8 +109,11 @@ export default function ProfilePage() {
         </CardHeader>
 
         <Separator className="mx-4 my-2" />
-        
+
         <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading...</p>
+          ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
             {/* Names */}
@@ -183,10 +149,9 @@ export default function ProfilePage() {
             {/* Password Section */}
             <div className="space-y-6">
               <div className="text-[color:var(--secondary-foreground)]">
-                <p className="text-base font-semibold">Change Password </p>
+                <p className="text-base font-semibold">Change Password</p>
                 <p>Leave blank to keep your current password</p>
               </div>
-              
 
               <div>
                 <Label className="my-2">New Password</Label>
@@ -207,11 +172,19 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full py-5 hover:bg-(var:--accent-foreground) my-4">
-              Save Changes
+            {saveError && <p className="text-sm text-red-500">{saveError}</p>}
+            {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
+
+            <Button
+              type="submit"
+              disabled={updateProfile.isPending}
+              className="w-full py-5 hover:bg-(var:--accent-foreground) my-4"
+            >
+              {updateProfile.isPending ? "Saving..." : "Save Changes"}
             </Button>
 
           </form>
+          )}
         </CardContent>
       </Card>
 </div>

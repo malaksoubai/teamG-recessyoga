@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { League_Spartan, Poppins } from "next/font/google";
+import { TRPCReactProvider } from "@/lib/trpc/provider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -26,7 +27,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${poppins.variable} ${leagueSpartan.variable}`}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+        </body>
     </html>
   );
 }

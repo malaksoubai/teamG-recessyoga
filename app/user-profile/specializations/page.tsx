@@ -1,4 +1,5 @@
 "use client"
+import { useEffect, useState } from "react"
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -6,39 +7,43 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import React from "react"
+import { trpc } from "@/lib/trpc/client"
 // icons
 import { User } from 'lucide-react';
 import { Bell } from 'lucide-react';
 import { Award } from 'lucide-react';
 
-export function Example() {
-  const [checked, setChecked] = React.useState(false)
- 
-  return (
-    <Checkbox
-      checked={checked}
-      onCheckedChange={(value) => setChecked(value === true)}
-    />
-  )
-}
-export default function NotificationPage() {
-  const yogaStyles = [
-    "Ashtanga",
-    "Beginner Yoga",
-    "Core Barre",
-    "Core & Restore",
-    "Hatha",
-    "Mat Pilates",
-    "Meditation",
-    "Restorative",
-    "Somatic Flow",
-    "Strength & Conditioning",
-    "Vinyasa",
-    "Yin ",
-    "Yoga Sculpt"
-  ];
-  const [selectedStyles, setSelectedStyles] = React.useState<string[]>([]);  const toggleStyle = (style: string) => {
+const ALL_YOGA_STYLES = [
+  "Ashtanga",
+  "Beginner Yoga",
+  "Core Barre",
+  "Core & Restore",
+  "Hatha",
+  "Mat Pilates",
+  "Meditation",
+  "Restorative",
+  "Somatic Flow",
+  "Strength & Conditioning",
+  "Vinyasa",
+  "Yin",
+  "Yoga Sculpt",
+];
+
+export default function SpecializationsPage() {
+  const { data: qualifications, isLoading } = trpc.profiles.getMyQualifications.useQuery();
+  const updateQualifications = trpc.profiles.updateQualifications.useMutation();
+
+  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (qualifications) {
+      setSelectedStyles(qualifications);
+    }
+  }, [qualifications]);
+
+  const toggleStyle = (style: string) => {
     setSelectedStyles((prev) =>
       prev.includes(style)
         ? prev.filter((s) => s !== style)
@@ -46,13 +51,20 @@ export default function NotificationPage() {
     );
   };
 
-  function onSubmit(data: FormData) {
-    console.log(data)
-  }
+  const handleSave = async () => {
+    setSaveError(null);
+    setSaveSuccess(false);
+    try {
+      await updateQualifications.mutateAsync({ classTypeNames: selectedStyles });
+      setSaveSuccess(true);
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "Failed to save changes.");
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
-    
+
     <div className="p-8 pb-4 bg-[color:var(--background)]">
       <TeacherHomeHeader />
     </div>
@@ -61,7 +73,7 @@ export default function NotificationPage() {
     <div className="flex gap-6 p-8 pt-4">
       <Card className="w-20 md:w-1/4 h-fit transition-all">
         <CardContent className="p-3 space-y-3 text-lg text-[color:var(--secondary-foreground)]">
-         
+
           {/* personal info */}
           <Button variant="ghost" className="w-full justify-center md:justify-start gap-3 py-4 md:py-8">
             <Link href="/user-profile/profile-details" className="flex w-full items-center gap-3">
@@ -118,16 +130,22 @@ export default function NotificationPage() {
           </div>
           <div className="flex-col items-start leading-tight">
             <CardTitle className="text-xl">Yoga Specializations</CardTitle>
-            <CardDescription>Select the styles you're qualified to teach</CardDescription>
+            <CardDescription>Select the styles you&apos;re qualified to teach</CardDescription>
           </div>
         </CardHeader>
 
         <Separator className="mx-4 my-2" />
-        
+
         <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground py-4">Loading...</p>
+          ) : (
+            <>
             <div className="grid grid-cols-2 gap-4">
-                {yogaStyles.map((style) => {
-                    const checked = selectedStyles.includes(style);
+                {ALL_YOGA_STYLES.map((style) => {
+                    const checked = selectedStyles.some(
+                      (s) => s.trim().toLowerCase() === style.trim().toLowerCase()
+                    );
 
                     return (
                     <Label key={style}
@@ -148,10 +166,20 @@ export default function NotificationPage() {
             <div className="mt-6 rounded-xl border p-4 text-sm text-muted-foreground text-center">
                 {selectedStyles.length} styles selected
             </div>
-          <Button type="submit" className="w-full py-5 hover:bg-(var:--accent-foreground) my-4">
-            Save Changes
-          </Button>
 
+            {saveError && <p className="text-sm text-red-500 mt-2">{saveError}</p>}
+            {saveSuccess && <p className="text-sm text-green-600 mt-2">Changes saved!</p>}
+
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={updateQualifications.isPending}
+              className="w-full py-5 hover:bg-(var:--accent-foreground) my-4"
+            >
+              {updateQualifications.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+            </>
+          )}
         </CardContent>
       </Card>
       </div>
