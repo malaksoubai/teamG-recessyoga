@@ -51,16 +51,24 @@ export default function SpecializationsPage() {
     );
   };
 
-  const handleSave = async () => {
-    setSaveError(null);
-    setSaveSuccess(false);
-    try {
-      await updateQualifications.mutateAsync({ classTypeNames: selectedStyles });
-      setSaveSuccess(true);
-    } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save changes.");
-    }
-  };
+  const utils = trpc.useUtils();
+
+const handleSave = async () => {
+  setSaveError(null);
+  setSaveSuccess(false);
+
+  try {
+    await updateQualifications.mutateAsync({
+      classTypeNames: selectedStyles,
+    });
+
+    await utils.profiles.getMyQualifications.invalidate();
+
+    setSaveSuccess(true);
+  } catch (e: unknown) {
+    setSaveError(e instanceof Error ? e.message : "Failed to save changes.");
+  }
+};
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
