@@ -43,6 +43,8 @@ export default function LoginPage() {
 
       if (!profile) {
         router.push("/sign-up")
+      } else if (!profile.isActive && !profile.isAdmin) {
+        router.push("/account-rejected")
       } else if (!profile.approved) {
         router.push("/pending-approval")
       } else if (profile.isAdmin) {

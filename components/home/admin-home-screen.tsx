@@ -18,10 +18,11 @@ export function AdminHomeScreen() {
     urgentCount,
     openCount,
     pendingApprovalCount,
+    refetch,
   } = useOpenSubstituteRequests()
 
   return (
-    <div className="min-h-screen w-full bg-[#ffffff] text-[#1b1b1b]">
+    <div className="min-h-screen w-full bg-[#f2f2f2] text-[#1b1b1b]">
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-12 pt-6 sm:px-6 lg:px-10 xl:px-12">
         <AdminHomeHeader />
 
@@ -44,7 +45,12 @@ export function AdminHomeScreen() {
         </div>
 
         <div className="mt-8">
-          <OpenSubstituteRequestsSection items={items} status={status} />
+          <OpenSubstituteRequestsSection
+            items={items}
+            status={status}
+            viewer="admin"
+            onRequestsUpdated={refetch}
+          />
         </div>
       </div>
     </div>

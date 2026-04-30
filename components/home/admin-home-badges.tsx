@@ -17,7 +17,7 @@ export function AdminHomeBadges({
         <span className="inline-flex items-center rounded-full bg-[#880808]/70 px-3 py-1 text-xs font-medium text-white">
           …
         </span>
-        <span className="inline-flex items-center rounded-full bg-[#2d2d2d]/70 px-3 py-1 text-xs font-medium text-white">
+        <span className="inline-flex items-center rounded-full bg-[#3d4a38]/70 px-3 py-1 text-xs font-medium text-white">
           …
         </span>
         <span className="inline-flex items-center rounded-full bg-[#e8ede7] px-3 py-1 text-xs font-medium text-[#1b1b1b]">
@@ -40,7 +40,7 @@ export function AdminHomeBadges({
       <span className="inline-flex items-center rounded-full bg-[#880808] px-3 py-1 text-xs font-medium text-white">
         {urgentCount} Urgent
       </span>
-      <span className="inline-flex items-center rounded-full bg-[#2d2d2d] px-3 py-1 text-xs font-medium text-white">
+      <span className="inline-flex items-center rounded-full bg-[#3d4a38] px-3 py-1 text-xs font-medium text-white">
         {approvalLabel}
       </span>
       <span className="inline-flex items-center rounded-full bg-[#e8ede7] px-3 py-1 text-xs font-medium text-[#1b1b1b]">

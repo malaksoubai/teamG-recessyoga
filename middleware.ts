@@ -15,9 +15,11 @@ const PUBLIC_ROUTES = [
   "/login",
   "/sign-up",
   "/pending-approval",
+  "/account-rejected",
   "/auth/callback",
   "/logout",
   "/complete-profile",
+  ...(process.env.NODE_ENV !== "production" ? ["/dev/admin-home-preview"] : []),
 ]
 
 export async function middleware(request: NextRequest) {
