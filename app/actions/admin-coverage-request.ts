@@ -27,7 +27,7 @@ export async function approveClassTypeChange(requestId: number) {
     .update(coverageRequests)
     .set({
       classTypeChangeStatus: "approved",
-      status: "open",
+      status: "claimed",
       updatedAt: new Date(),
     })
     .where(
