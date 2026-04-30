@@ -14,15 +14,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
+import { ProfileSidebar } from "@/components/home/profile-sidebar";
 import { trpc } from "@/lib/trpc/client"
-import { UserProfileSidebar } from "@/components/user-profile/user-profile-sidebar"
-import { Bell, Mail, Phone } from "lucide-react"
+// icons
+import {Bell, Mail, Phone } from 'lucide-react';
 
 
 export default function NotificationPage() {
   const { data: profile, isLoading } = trpc.profiles.getCurrentProfile.useQuery();
   const updateNotificationPreference = trpc.profiles.updateNotificationPreference.useMutation();
-
+  const utils = trpc.useUtils();
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [phone, setPhone] = useState("");
@@ -31,8 +32,9 @@ export default function NotificationPage() {
 
   useEffect(() => {
     if (profile) {
-      setEmailEnabled(profile.notificationPreference === "email");
-      setSmsEnabled(profile.notificationPreference === "sms");
+      const pref = profile.notificationPreference;
+      setEmailEnabled(pref === "email");
+      setSmsEnabled(pref === "sms");
       setPhone(profile.phone ?? "");
     }
   }, [profile]);
@@ -53,6 +55,8 @@ export default function NotificationPage() {
         notificationPreference: preference,
         phone: smsEnabled ? phone.trim() : null,
       });
+
+      await utils.profiles.getCurrentProfile.invalidate();
       setSaveSuccess(true);
     } catch (e: unknown) {
       setSaveError(e instanceof Error ? e.message : "Failed to save changes.");
@@ -62,140 +66,138 @@ export default function NotificationPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
 
-    <div className="p-8 pb-4 bg-[color:var(--background)]">
-      <TeacherHomeHeader />
-    </div>
+      <div className="p-8 pb-4 bg-[color:var(--background)]">
+        <TeacherHomeHeader />
+      </div>
 
-    {/* Sidebar*/}
-    <div className="flex gap-6 p-8 pt-4">
-      <UserProfileSidebar active="notifications" isAdmin={!!profile?.isAdmin} />
+      <div className="flex gap-6 p-8 pt-4">
+        <ProfileSidebar />
+        
+        {/* Main Card */}
+        <div className="flex-1">
+          <Card className="w-full h-fit">
+            <CardHeader className="text-[color:var(--secondary-foreground)] flex gap-4 w-full justify-center md:justify-start">
+              <div className="flex items-center justify-center bg-[color:var(--secondary)] aspect-square rounded-lg p-3">
+                <Bell color="var(--secondary-foreground)" size={30}/>
+              </div>
+              <div className="flex-col items-start leading-tight">
+                <CardTitle className="text-xl">Notification Preferences</CardTitle>
+                <CardDescription>Choose how you recieve substitution requests</CardDescription>
+              </div>
+            </CardHeader>
 
-      {/* Main Card */}
-      <Card className="flex-1 w-4xl h-fit">
-        <CardHeader className="text-[color:var(--secondary-foreground)] flex gap-4 w-full justify-center md:justify-start">
-        <div className="flex items-center justify-center bg-[color:var(--secondary)] aspect-square rounded-lg p-3">
-            <Bell color="var(--secondary-foreground)" size={30}/>
-          </div>
-          <div className="flex-col items-start leading-tight">
-            <CardTitle className="text-xl">Notification Preferences</CardTitle>
-            <CardDescription>Choose how you recieve substitution requests</CardDescription>
-          </div>
-        </CardHeader>
+            <Separator className="mx-4 my-2" />
 
-        <Separator className="mx-4 my-2" />
+            <CardContent>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground py-4">Loading...</p>
+              ) : (
+              <FieldGroup className="space-y-2">
 
-        <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground py-4">Loading...</p>
-          ) : (
-          <FieldGroup className="space-y-2">
-
-          <FieldLabel
-            className={`p-2 rounded-xl border transition-all ${
-              emailEnabled
-                ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
-                : "!border-gray-200 !bg-white"
-            }`}
-          >
-              <Field orientation="horizontal">
-                <div className="bg-[color:var(--secondary-foreground)] rounded-lg p-3">
-                  <Mail color="white" />
-                </div>
-
-                <FieldContent className="px-4 flex-1">
-                  <div className="hidden md:flex flex-col items-start leading-tight">
-                    <FieldTitle>Email notifications</FieldTitle>
-                    <FieldDescription>
-                      Receive notifications at {profile?.email ?? "your email"}
-                    </FieldDescription>
-                  </div>
-                </FieldContent>
-
-                <Checkbox
-                  id="email-checkbox"
-                  checked={emailEnabled}
-                  onCheckedChange={(value) => {
-                    setEmailEnabled(!!value);
-                    if (value) setSmsEnabled(false);
-                  }}
-                />
-              </Field>
-            </FieldLabel>
-
-            <FieldLabel
-              className={`p-2 rounded-xl border transition-all ${
-                smsEnabled
-                  ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
-                  : "!border-gray-200 !bg-white"
-              }`}
-            >
-                <Field orientation="horizontal">
-                  <div className="bg-[color:var(--secondary-foreground)] rounded-lg p-3">
-                    <Phone color="white" />
-                  </div>
-
-                  <FieldContent className="px-4 flex-1">
-                    <div className="hidden md:flex flex-col items-start leading-tight">
-                      <FieldTitle>Text Message (SMS)</FieldTitle>
-                      <FieldDescription>
-                        Get instant alerts via text message
-                      </FieldDescription>
+                <FieldLabel
+                  className={`p-2 rounded-xl border transition-all ${
+                    emailEnabled
+                      ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
+                      : "!border-gray-200 !bg-white"
+                  }`}
+                >
+                  <Field orientation="horizontal">
+                    <div className="bg-[color:var(--secondary-foreground)] rounded-lg p-3">
+                      <Mail color="white" />
                     </div>
-                  </FieldContent>
 
-                  <Checkbox
-                    id="sms-checkbox"
-                    checked={smsEnabled}
-                    onCheckedChange={(value) => {
-                      setSmsEnabled(!!value);
-                      if (value) setEmailEnabled(false);
-                    }}
-                  />
-                </Field>
-
-                {smsEnabled && (
-                  <>
-                    <Separator/>
-                    <div className="pl-20 w-full">
-                      <div className="flex gap-3 items-center w-full my-2">
-                      <Input
-                        id="form-phone"
-                        type="tel"
-                        placeholder="+1 (555) 123-4567"
-                        className="flex-1"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        className="border-red-400"
-                        onClick={() => setPhone("")}
-                      >
-                        Remove
-                      </Button>
+                    <FieldContent className="px-4 flex-1">
+                      <div className="hidden md:flex flex-col items-start leading-tight">
+                        <FieldTitle>Email notifications</FieldTitle>
+                        <FieldDescription> Receive notifications at {profile?.email}</FieldDescription>
                       </div>
-                    </div>
-                  </>
-                )}
-            </FieldLabel>
+                    </FieldContent>
 
-            {saveError && <p className="text-sm text-red-500">{saveError}</p>}
-            {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
+                    <Checkbox
+                      checked={emailEnabled}
+                      onCheckedChange={(value) => {
+                        const v = !!value;
+                        setEmailEnabled(v);
+                        if (v) setSmsEnabled(false);
+                      }}
+                    />
+                  </Field>
+                </FieldLabel>
 
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={updateNotificationPreference.isPending}
-              className="w-full py-5 hover:bg-(var:--accent-foreground) my-4"
-            >
-              {updateNotificationPreference.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </FieldGroup>
-          )}
+                <FieldLabel
+                  className={`p-2 rounded-xl border transition-all ${
+                    smsEnabled
+                      ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
+                      : "!border-gray-200 !bg-white"
+                  }`}
+                >
+                    <Field orientation="horizontal">
+                      <div className="bg-[color:var(--secondary-foreground)] rounded-lg p-3">
+                        <Phone color="white" />
+                      </div>
 
-        </CardContent>
-      </Card>
+                      <FieldContent className="px-4 flex-1">
+                        <div className="hidden md:flex flex-col items-start leading-tight">
+                          <FieldTitle>Text Message (SMS)</FieldTitle>
+                          <FieldDescription>
+                            Get instant alerts via text message
+                          </FieldDescription>
+                        </div>
+                      </FieldContent>
+
+                      <Checkbox
+                        checked={smsEnabled}
+                        onCheckedChange={(value) => {
+                          const v = !!value;
+                          setSmsEnabled(v);
+                          if (v) setEmailEnabled(false);
+                        }}
+                      />
+                    </Field>
+
+                    {smsEnabled && (
+                      <>
+                        <Separator/>
+                        <div className="pl-20 w-full">
+                          <div className="flex gap-3 items-center w-full my-2">
+                          <Input
+                            type="tel"
+                            placeholder="+1 (555) 123-4567"
+                            className="flex-1"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            className="border-red-400"
+                            onClick={() => setPhone("")}
+                          >
+                            Remove
+                          </Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                </FieldLabel>
+
+                {saveError && <p className="text-sm text-red-500">{saveError}</p>}
+                {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
+
+                <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={updateNotificationPreference.isPending}
+                  className="w-full py-5 hover:bg-(var:--accent-foreground) my-4"
+                >
+                  {updateNotificationPreference.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </FieldGroup>
+              )}
+
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

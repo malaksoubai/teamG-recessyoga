@@ -7,11 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { trpc } from "@/lib/trpc/client"
 import { createClient } from "@/lib/supabase/client"
-import { UserProfileSidebar } from "@/components/user-profile/user-profile-sidebar"
-import { User } from "lucide-react"
-
+import { ProfileSidebar } from "@/components/home/profile-sidebar";
+// icons
+import { User} from 'lucide-react';
 
 type FormData = {
   firstName: string
@@ -22,156 +21,184 @@ type FormData = {
 }
 
 export default function ProfilePage() {
-  const { data: profile, isLoading } = trpc.profiles.getCurrentProfile.useQuery();
-  const updateProfile = trpc.profiles.updateProfile.useMutation();
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const supabase = createClient()
+  const { register, handleSubmit, reset } = useForm<FormData>()
+  const [profile, setProfile] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
-  const { register, handleSubmit, reset, watch } = useForm<FormData>({
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  })
+  useEffect(() => {loadProfile()}, [])
 
-  useEffect(() => {
-    if (profile) {
-      reset({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        email: profile.email,
-        password: "",
-        confirmPassword: "",
-      });
-    }
-  }, [profile, reset]);
+  async function loadProfile() {
+    setIsLoading(true)
+    const { data: userData, error: userError } = await supabase.auth.getUser()
 
-  const onSubmit = async (data: FormData) => {
-    setSaveError(null);
-    setSaveSuccess(false);
-
-    if (data.password && data.password !== data.confirmPassword) {
-      setSaveError("Passwords do not match.");
-      return;
+    if (userError || !userData?.user) {
+      console.error("No user found")
+      setIsLoading(false)
+      return
     }
 
-    try {
-      await updateProfile.mutateAsync({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-      });
+    const user = userData.user
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single()
 
-      if (data.password) {
-        const supabase = createClient();
-        const { error } = await supabase.auth.updateUser({ password: data.password });
-        if (error) throw error;
-      }
-
-      setSaveSuccess(true);
-      reset({ ...data, password: "", confirmPassword: "" });
-    } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Failed to save changes.");
+    if (error) {
+      console.error("Error loading profile:", error)
+      setIsLoading(false)
+      return
     }
-  };
+
+    setProfile(data)
+
+    reset({
+      firstName: data.first_name,
+      lastName: data.last_name,
+      email: data.email,
+    })
+
+    setIsLoading(false)
+  }
+
+  async function onSubmit(formData: FormData) {
+
+    setSaveError(null)
+    setSaveSuccess(false)
+
+    const { data: userData } =
+      await supabase.auth.getUser()
+
+    const user = userData?.user
+
+    if (!user) return
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name:
+          formData.firstName || profile.first_name,
+        last_name:
+          formData.lastName || profile.last_name,
+        email:
+          formData.email || profile.email,
+      })
+      .eq("id", user.id)
+
+    if (error) {
+      console.error(error)
+      setSaveError("Failed to update profile.")
+      return
+    }
+
+    setSaveSuccess(true)
+    loadProfile()
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F1F5F0]">
 
-    <div className="p-8 pb-4 bg-[color:var(--background)]">
-      <TeacherHomeHeader />
-    </div>
+      <div className="p-8 pb-4 bg-[color:var(--background)]">
+        <TeacherHomeHeader />
+      </div>
 
-    {/* Sidebar*/}
-    <div className="flex gap-6 p-8 pt-4">
-      <UserProfileSidebar active="personal" isAdmin={!!profile?.isAdmin} />
-
-      {/* Main Card */}
-      <Card className="flex-1 w-4xl h-fit">
-        <CardHeader className="text-[color:var(--secondary-foreground)] flex gap-4 w-full justify-center md:justify-start">
-            <div className="flex items-center justify-center bg-[color:var(--secondary)] aspect-square rounded-lg p-3">
-              <User color="var(--secondary-foreground)" size={30}/>
-            </div>
-            <div className="flex-col items-start leading-tight">
-              <CardTitle className="text-xl">Personal Information</CardTitle>
-              <CardDescription>Update your account details and password</CardDescription>
-            </div>
-        </CardHeader>
-
-        <Separator className="mx-4 my-2" />
-
-        <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground py-4">Loading...</p>
-          ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-
-            {/* Names */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="my-2">First Name</Label>
-                <Input {...register("firstName")} />
+      <div className="flex gap-6 p-8 pt-4">
+        <ProfileSidebar />
+        
+        {/* Main Card */}
+        <div className="flex-1">
+          <Card className="w-full h-fit">
+            <CardHeader className="text-[color:var(--secondary-foreground)] flex gap-4 w-full justify-center md:justify-start">
+              <div className="flex items-center justify-center bg-[color:var(--secondary)] aspect-square rounded-lg p-3">
+                <User color="var(--secondary-foreground)" size={30}/>
               </div>
-
-              <div>
-                <Label className="my-2">Last Name</Label>
-                <Input {...register("lastName")} />
+              <div className="flex-col items-start leading-tight">
+                <CardTitle className="text-xl">Personal Information</CardTitle>
+                <CardDescription>Update your account details and password</CardDescription>
               </div>
-            </div>
+            </CardHeader>
 
-            {/* Email */}
-            <div>
-              <Label className="my-2">Email Address</Label>
-              <Input type="email" {...register("email")} />
-            </div>
+            <Separator className="mx-4 my-2" />
 
-            <Separator className="my-4" />
+            <CardContent>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground py-4">Loading...</p>
+              ) : (
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
-            {/* Password Section */}
-            <div className="space-y-6">
-              <div className="text-[color:var(--secondary-foreground)]">
-                <p className="text-base font-semibold">Change Password</p>
-                <p>Leave blank to keep your current password</p>
-              </div>
+                {/* Names */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="my-2">First Name</Label>
+                    <Input
+                      placeholder={profile?.first_name || ""}
+                      {...register("firstName")}
+                    />
+                  </div>
 
-              <div>
-                <Label className="my-2">New Password</Label>
-                <Input
-                  type="password"
-                  placeholder="Minimum 6 characters"
-                  {...register("password")}
-                />
-              </div>
+                  <div>
+                    <Label className="my-2">Last Name</Label>
+                    <Input
+                      placeholder={profile?.last_name || ""}
+                      {...register("lastName")}
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label className="my-2">Confirm New Password</Label>
-                <Input
-                  type="password"
-                  placeholder="Re-enter your password"
-                  {...register("confirmPassword")}
-                />
-              </div>
-            </div>
+                {/* Email */}
+                <div>
+                  <Label className="my-2">Email Address</Label>
+                  <Input type="email"
+                    placeholder={profile?.email || ""}
+                    {...register("email")}
+                  />
+                </div>
 
-            {saveError && <p className="text-sm text-red-500">{saveError}</p>}
-            {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
+                <Separator className="my-4" />
 
-            <Button
-              type="submit"
-              disabled={updateProfile.isPending}
-              className="w-full py-5 hover:bg-(var:--accent-foreground) my-4"
-            >
-              {updateProfile.isPending ? "Saving..." : "Save Changes"}
-            </Button>
+                {/* Password Section */}
+                <div className="space-y-6">
+                  <div className="text-[color:var(--secondary-foreground)]">
+                    <p className="text-base font-semibold">Change Password</p>
+                    <p>Leave blank to keep your current password</p>
+                  </div>
 
-          </form>
-          )}
-        </CardContent>
-      </Card>
-</div>
+                  <div>
+                    <Label className="my-2">New Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="Minimum 6 characters"
+                      {...register("password")}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="my-2">Confirm New Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="Re-enter your password"
+                      {...register("confirmPassword")}
+                    />
+                  </div>
+                </div>
+
+                {saveError && <p className="text-sm text-red-500">{saveError}</p>}
+                {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
+
+                <Button type="submit"
+                  className="w-full py-5 hover:bg-(var:--accent-foreground) my-4">
+                  Save Changes
+                </Button>
+
+              </form>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
