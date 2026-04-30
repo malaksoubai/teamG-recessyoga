@@ -30,9 +30,9 @@ export async function notifySubClaim(coverageRequestId: number) {
   })
 
   await resend.emails.send({
-    from: 'onboarding@resend.dev',
-    to: 'aleon4105@gmail.com', // TODO: revert to request.requestedBy.email once domain verified
-    subject: `[TEST — would go to: ${request.requestedBy.email}] Your class has been covered`,
+    from: "subrequest@notifications.recessyogastudio.com",
+    to: request.requestedBy.email,
+    subject: `Your class has been covered!`,
     html: buildClaimEmailHtml({
       requesterFirstName: request.requestedBy.firstName,
       claimerFullName: `${request.claimedBy.firstName} ${request.claimedBy.lastName}`,
