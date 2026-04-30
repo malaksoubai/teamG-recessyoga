@@ -39,7 +39,7 @@ function makeQueryClient() {
 // across re-renders and navigations.
 let browserQueryClient: QueryClient | undefined = undefined;
 
-function getQueryClient() {
+export function getQueryClient() {
   if (typeof window === 'undefined') {
     // Server: always make a new client (no sharing between requests).
     return makeQueryClient();

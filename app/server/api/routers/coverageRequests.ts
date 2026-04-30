@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { db } from '@/app/server/db';
-import { coverageRequests, locations, classTypes, profiles } from '@/app/db/schema';
+import { coverageRequests, locations, classTypes } from '@/app/db/schema';
 import { eq, and, gt, aliasedTable } from 'drizzle-orm';
 import { notifySubRequest } from '@/app/notifications/notify-sub-request';
 import { notifySubClaim } from '@/app/notifications/notify-sub-claim';
@@ -153,7 +153,6 @@ const getMyApprovedClassTypeChanges = protectedProcedure
       .from(coverageRequests)
       .innerJoin(currentClassType, eq(coverageRequests.currentClassTypeId, currentClassType.id))
       .innerJoin(locations, eq(coverageRequests.locationId, locations.id))
-      .innerJoin(profiles, eq(coverageRequests.claimedByInstructorId, profiles.id))
       .where(
         and(
           eq(coverageRequests.claimedByInstructorId, subject.id),
@@ -162,9 +161,6 @@ const getMyApprovedClassTypeChanges = protectedProcedure
           gt(coverageRequests.startAt, new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)),
         )
       );
-      console.log("SUBJECT ID:", subject.id)
-      console.log("ROW claimedByInstructorId:", rows[0]?.id)
-      console.log("ROWS:", rows)
     return rows;
   });
 

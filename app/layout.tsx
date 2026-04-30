@@ -18,6 +18,15 @@ const leagueSpartan = League_Spartan({
 export const metadata: Metadata = {
   title: "Recess Yoga Studio — Substitute requests",
   description: "Manage substitute teaching requests for Recess Yoga Studio.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Recess Yoga",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
