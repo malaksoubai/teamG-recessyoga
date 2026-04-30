@@ -18,27 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Clock, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
-
-// TODO update this component to match the schema 
-// TODO e.g. CLASSTYPES needs to be connected to db!! 
-// All class type groups — matches client spec
-const CLASS_TYPE_OPTIONS = [
-  { label: "Other (Default)", value: "other"},
-  { label: "Vin to Yin", value: "vin-to-yin"},
-  { label: "Yogatha Sadhana", value: "yogatha-sadhana"},
-  { label: "Ashtanga", value: "ashtanga"},
-  { label: "Accessible Ashtanga", value: "accessible-ashtanga"},
-  { label: "Yin", value: "yin"},
-  { label: "Somatic Flow", value: "somatic-flow"},
-  { label: "Hatha", value: "hatha"},
-  { label: "Slow Flow", value: "slow-flow"},
-  { label: "Meditation and Flow", value: "meditation-and-flow"},
-  { label: "Sculpt Flow", value: "sculpt-flow"},
-  { label: "Core Barre", value: "core-barre"},
-  { label: "Mat Pilates", value: "mat-pilates"},
-  { label: "Strength and Conditioning", value: "strength-and-conditioning"},
-  { label: "Vinyasa", value: "vinyasa"},
-];
+import { trpc } from "@/lib/trpc/client";
 
 type UrgencyLevel = "less-than-24h" | "within-72h" | "within-week" | "over-week";
 
@@ -58,6 +38,7 @@ interface ClaimSubstituteModalProps {
   onOpenChange: (open: boolean) => void;
   onClaim: (classTypeOption: "maintain" | "change") => void;
   subRequest: SubRequest;
+  onClaimed?: () => void;
 }
 
 const URGENCY_CONFIG: Record<UrgencyLevel, { label: string; color: string; icon: boolean }> = {
@@ -72,30 +53,41 @@ export default function ClaimSubstituteModal({
   onOpenChange,
   onClaim,
   subRequest,
+  onClaimed,
 }: ClaimSubstituteModalProps) {
+  const { data: classTypes = [] } = trpc.coverageRequests.getClassTypes.useQuery();
+  const claimRequest = trpc.coverageRequests.claimRequest.useMutation();
+
   const [classTypeOption, setClassTypeOption] = useState<"maintain" | "change">("maintain");
-  const [newClassType, setNewClassType] = useState("");
+  const [newClassTypeId, setNewClassTypeId] = useState("");
   const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const urgency = URGENCY_CONFIG[subRequest.urgency];
   const isClassChange = classTypeOption === "change";
 
-  const handleConfirm = () => {
-  const payload = {
-      requestId: subRequest.id,
-      classTypeOption,
-      newClassType: isClassChange ? newClassType : null,
-      notes,
-    };
-    console.log("Claiming sub request:", payload);
-    onClaim(classTypeOption);
-    onOpenChange(false);
+  const handleConfirm = async () => {
+    setError(null);
+    try {
+      await claimRequest.mutateAsync({
+        requestId: parseInt(subRequest.id),
+        classTypeOption,
+        newClassTypeId: isClassChange && newClassTypeId ? parseInt(newClassTypeId) : undefined,
+        notes: notes || undefined,
+      });
+      onClaim(classTypeOption);
+      onClaimed?.();
+      handleCancel();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to claim request. Please try again.");
+    }
   };
 
   const handleCancel = () => {
     setClassTypeOption("maintain");
-    setNewClassType("");
+    setNewClassTypeId("");
     setNotes("");
+    setError(null);
     onOpenChange(false);
   };
 
@@ -132,7 +124,7 @@ export default function ClaimSubstituteModal({
         {subRequest.teacherNotes && (
           <div className="bg-gray-50 rounded-xl p-3">
             <p className="text-xs font-medium text-gray-500 mb-1">Notes from teacher:</p>
-            <p className="text-sm text-gray-700 italic">"{subRequest.teacherNotes}"</p>
+            <p className="text-sm text-gray-700 italic">&ldquo;{subRequest.teacherNotes}&rdquo;</p>
           </div>
         )}
 
@@ -187,23 +179,21 @@ export default function ClaimSubstituteModal({
               </div>
             </div>
 
-            {/* Class type dropdown — only shown when change is selected */}
             {isClassChange && (
               <div className="ml-7 space-y-2">
-                <Select value={newClassType} onValueChange={setNewClassType}>
+                <Select value={newClassTypeId} onValueChange={setNewClassTypeId}>
                   <SelectTrigger className="w-full bg-white border-gray-200 text-gray-500 text-sm">
                     <SelectValue placeholder="Select new class type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASS_TYPE_OPTIONS.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <span>{type.label}</span>
+                    {classTypes.map((type) => (
+                      <SelectItem key={type.id} value={String(type.id)}>
+                        {type.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                {/* Pending notice */}
                 <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-lg p-2.5">
                   <CheckCircle2 className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-700">
@@ -226,6 +216,12 @@ export default function ClaimSubstituteModal({
           />
         </div>
 
+        {error && (
+          <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+
         {/* Actions */}
         <div className="flex gap-3 mt-1">
           <Button
@@ -237,11 +233,15 @@ export default function ClaimSubstituteModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isClassChange && !newClassType}
+            disabled={(isClassChange && !newClassTypeId) || claimRequest.isPending}
             className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg disabled:opacity-40"
           >
             <CheckCircle2 className="w-4 h-4 mr-1.5" />
-            {isClassChange ? "Submit for Approval" : "Confirm Claim"}
+            {claimRequest.isPending
+              ? "Saving..."
+              : isClassChange
+              ? "Submit for Approval"
+              : "Confirm Claim"}
           </Button>
         </div>
       </DialogContent>

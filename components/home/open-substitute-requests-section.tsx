@@ -49,7 +49,7 @@ export function OpenSubstituteRequestsSection({
                   onUpdated={onRequestsUpdated}
                 />
               ) : (
-                <SubstituteRequestCard request={req} />
+                <SubstituteRequestCard request={req} onClaimed={onRequestsUpdated} />
               )}
             </li>
           ))}

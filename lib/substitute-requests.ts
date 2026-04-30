@@ -30,6 +30,8 @@ export type SubstituteRequestCardData = {
   modalCalendarDate: string
   /** Start–end time for the claim modal. */
   modalTimeRange: string
+  /** Raw DB status — used to initialise the card's button state. */
+  dbStatus: string
 }
 
 function formatDateTime(dateValue: Date | string | null): string {
@@ -178,6 +180,7 @@ export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCard
       claimModalUrgency: buildClaimModalUrgency(row.startAt),
       modalCalendarDate: formatCalendarDate(row.startAt),
       modalTimeRange: formatTimeRange(row.startAt, row.endAt),
+      dbStatus: row.status,
     }
   })
 }

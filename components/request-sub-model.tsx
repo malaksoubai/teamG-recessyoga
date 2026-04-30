@@ -18,80 +18,58 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { notifySubRequest } from "@/app/notifications/notify-sub-request";
-import { createCoverageRequest } from "@/app/actions/create-coverage-request";
-
-// TODO update this component to match the schema 
-// TODO e.g. LOCATIONS AND CLASSTYPES needs to be wired to db schema 
-const STUDIO_LOCATIONS = [
-  "Carrboro Studio",
-  "Durham Studio",
-  "Chapel Hill Studio",
-];
-
-const CLASS_TYPES = [
-  "Vinyasa",
-  "Vin to Yin",
-  "Yogatha Sadhana",
-  "Ashtanga",
-  "Accessible Ashtanga",
-  "Yin",
-  "Somatic Flow",
-  "Hatha",
-  "Slow Flow",
-  "Meditation and Flow",
-  "Sculpt Flow",
-  "Core Barre",
-  "Mat Pilates",
-  "Strength and Conditioning",
-  "Other",
-];
+import { trpc } from "@/lib/trpc/client";
 
 interface RequestSubstituteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreated?: () => void;
 }
 
 export default function RequestSubstituteModal({
   open,
   onOpenChange,
+  onCreated,
 }: RequestSubstituteModalProps) {
+  const { data: locations = [] } = trpc.coverageRequests.getLocations.useQuery();
+  const { data: classTypes = [] } = trpc.coverageRequests.getClassTypes.useQuery();
+  const createRequest = trpc.coverageRequests.createRequest.useMutation();
+
   const [form, setForm] = useState({
-    studioLocation: "",
+    locationId: "",
     date: "",
     startTime: "",
     endTime: "",
-    classType: "",
+    classTypeId: "",
     comment: "",
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit =
+    form.locationId && form.date && form.startTime && form.endTime && form.classTypeId;
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
-    setError(null)
-
+    setError(null);
     try {
-      await createCoverageRequest(form)
-      onOpenChange(false)
-    } catch (err) {
-      console.error("Failed to submit request:", err)
-      setError("Something went wrong submitting your request. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+      await createRequest.mutateAsync({
+        locationId: parseInt(form.locationId),
+        classTypeId: parseInt(form.classTypeId),
+        date: form.date,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        reason: form.comment || undefined,
+      });
+      handleCancel();
+      onCreated?.();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     }
-  }
+  };
 
   const handleCancel = () => {
-    setForm({
-      studioLocation: "",
-      date: "",
-      startTime: "",
-      endTime: "",
-      classType: "",
-      comment: "",
-    });
+    setForm({ locationId: "", date: "", startTime: "", endTime: "", classTypeId: "", comment: "" });
+    setError(null);
     onOpenChange(false);
   };
 
@@ -118,18 +96,16 @@ export default function RequestSubstituteModal({
               Studio Location <span className="text-red-500">*</span>
             </Label>
             <Select
-              value={form.studioLocation}
-              onValueChange={(val) =>
-                setForm((prev) => ({ ...prev, studioLocation: val }))
-              }
+              value={form.locationId}
+              onValueChange={(val) => setForm((prev) => ({ ...prev, locationId: val }))}
             >
               <SelectTrigger className="w-full bg-white border-gray-200 text-gray-500">
                 <SelectValue placeholder="Select studio" />
               </SelectTrigger>
               <SelectContent>
-                {STUDIO_LOCATIONS.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {loc}
+                {locations.map((loc) => (
+                  <SelectItem key={loc.id} value={String(loc.id)}>
+                    {loc.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -144,9 +120,7 @@ export default function RequestSubstituteModal({
             <Input
               type="date"
               value={form.date}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, date: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
               className="bg-white border-gray-200 text-gray-700"
             />
           </div>
@@ -160,9 +134,7 @@ export default function RequestSubstituteModal({
               <Input
                 type="time"
                 value={form.startTime}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, startTime: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
                 className="bg-white border-gray-200 text-gray-700"
               />
             </div>
@@ -173,9 +145,7 @@ export default function RequestSubstituteModal({
               <Input
                 type="time"
                 value={form.endTime}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, endTime: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, endTime: e.target.value }))}
                 className="bg-white border-gray-200 text-gray-700"
               />
             </div>
@@ -187,18 +157,16 @@ export default function RequestSubstituteModal({
               Class Type <span className="text-red-500">*</span>
             </Label>
             <Select
-              value={form.classType}
-              onValueChange={(val) =>
-                setForm((prev) => ({ ...prev, classType: val }))
-              }
+              value={form.classTypeId}
+              onValueChange={(val) => setForm((prev) => ({ ...prev, classTypeId: val }))}
             >
               <SelectTrigger className="w-full bg-white border-gray-200 text-gray-500">
                 <SelectValue placeholder="Select class type" />
               </SelectTrigger>
               <SelectContent>
-                {CLASS_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                {classTypes.map((type) => (
+                  <SelectItem key={type.id} value={String(type.id)}>
+                    {type.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -211,9 +179,7 @@ export default function RequestSubstituteModal({
             <Textarea
               placeholder="Add any additional context or notes..."
               value={form.comment}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, comment: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, comment: e.target.value }))}
               className="bg-white border-gray-200 text-gray-700 resize-none min-h-[80px]"
             />
           </div>
@@ -222,24 +188,37 @@ export default function RequestSubstituteModal({
         {/* Actions */}
         <div className="flex gap-3 mt-2">
           {error && (
-            <div className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            <div className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 flex-1">
               {error}
             </div>
           )}
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex-1 bg-[#4a5e4a] hover:bg-[#3d4f3d] text-white font-medium rounded-lg disabled:opacity-50"
-          >
-            {isSubmitting ? "Submitting..." : "Submit Request"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            className="border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg"
-          >
-            Cancel
-          </Button>
+          {!error && (
+            <>
+              <Button
+                onClick={handleSubmit}
+                disabled={!canSubmit || createRequest.isPending}
+                className="flex-1 bg-[#4a5e4a] hover:bg-[#3d4f3d] text-white font-medium rounded-lg disabled:opacity-50"
+              >
+                {createRequest.isPending ? "Submitting..." : "Submit Request"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                className="border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg"
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+          {error && (
+            <Button
+              variant="outline"
+              onClick={() => setError(null)}
+              className="border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg"
+            >
+              Try Again
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
