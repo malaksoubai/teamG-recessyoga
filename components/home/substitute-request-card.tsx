@@ -8,13 +8,13 @@ import {
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SubstituteRequestMock } from "@/lib/mock-substitute-requests";
+import type { SubstituteRequestCardData } from "@/lib/substitute-requests";
 import { Button } from "../ui/button";
 import { useState } from "react";
 import ClaimSubstituteModal from "@/components/claim-sub-model"
 
 type SubstituteRequestCardProps = {
-  request: SubstituteRequestMock;
+  request: SubstituteRequestCardData;
 };
 
 export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
@@ -125,12 +125,12 @@ export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
           subRequest={{
             id: request.id,
             requestedBy: request.requestedBy,
-            date: request.dateTime,
-            time: request.dateTime,
+            date: request.modalCalendarDate,
+            time: request.modalTimeRange,
             location: request.location,
             classType: request.title,
             teacherNotes: request.note,
-            urgency: request.urgency?.kind === "urgent" ? "less-than-24h" : "over-week",
+            urgency: request.claimModalUrgency,
           }}
         />
 

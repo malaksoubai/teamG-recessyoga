@@ -1,27 +1,34 @@
 "use client"
 
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useState } from "react"
+import { Plus } from "lucide-react"
 
-import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
-import { TeacherHomeBadges } from "@/components/home/teacher-home-badges";
-import { OpenSubstituteRequestsSection } from "@/components/home/open-substitute-requests-section";
-import { useOpenSubstituteRequests } from "@/hooks/use-open-substitute-requests";
+import { AdminHomeBadges } from "@/components/home/admin-home-badges"
+import { AdminHomeHeader } from "@/components/home/admin-home-header"
+import { OpenSubstituteRequestsSection } from "@/components/home/open-substitute-requests-section"
+import { useOpenSubstituteRequests } from "@/hooks/use-open-substitute-requests"
 import RequestSubstituteModal from "@/components/request-sub-model"
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button"
 
-export function TeacherHomeScreen() {
+export function AdminHomeScreen() {
   const [requestOpen, setRequestOpen] = useState(false)
-  const { items, status, urgentCount, openCount } = useOpenSubstituteRequests()
+  const {
+    items,
+    status,
+    urgentCount,
+    openCount,
+    pendingApprovalCount,
+  } = useOpenSubstituteRequests()
 
   return (
     <div className="min-h-screen w-full bg-[#ffffff] text-[#1b1b1b]">
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-12 pt-6 sm:px-6 lg:px-10 xl:px-12">
-        <TeacherHomeHeader />
+        <AdminHomeHeader />
 
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 lg:mt-8">
-          <TeacherHomeBadges
+          <AdminHomeBadges
             urgentCount={urgentCount}
+            pendingApprovalCount={pendingApprovalCount}
             openCount={openCount}
             loading={status === "loading"}
           />
@@ -41,5 +48,5 @@ export function TeacherHomeScreen() {
         </div>
       </div>
     </div>
-  );
+  )
 }

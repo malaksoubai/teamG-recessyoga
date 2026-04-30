@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { db } from '@/app/db'
+import { db } from '@/app/server/db'
 import {
   profiles,
   coverageRequests,
