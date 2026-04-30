@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { and, eq } from "drizzle-orm"
-
+import { notifySubClaim } from "@/app/notifications/notify-sub-claim"
 import { db } from "@/app/server/db"
 import { coverageRequests, profiles } from "@/app/db/schema"
 import { createClient } from "@/lib/supabase/server"
@@ -36,7 +36,9 @@ export async function approveClassTypeChange(requestId: number) {
         eq(coverageRequests.classTypeChangeStatus, "pending"),
       ),
     )
-
+  notifySubClaim(requestId).catch((err) =>
+    console.error("Failed to send approval email:", err)
+  )
   revalidatePath("/admin")
   return { success: true as const }
 }

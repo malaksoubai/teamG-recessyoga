@@ -147,13 +147,13 @@ async function sendToAll(
   await Promise.all(
     recipients.map((r) =>
       resend.emails.send({
-        from: "onboarding@resend.dev",
-        to:  "malaksoubai03@gmail.com", //r.email,
-        subject: `Sub needed: ${data.classType} on ${data.date}. This email would go to: ${r.email}`,
+        from: "subrequest@notifications.recessyogastudio.com",
+        to:  r.email,
+        subject: `Sub needed: ${data.classType} on ${data.date}`,
         html: buildEmailHtml({ ...data, firstName: r.firstName }),
       })
     )
-  )
+  ) 
 }
 
 function buildEmailHtml(data: {
