@@ -76,7 +76,9 @@ export default function ClaimSubstituteModal({
         notes: notes || undefined,
       });
       onClaim(classTypeOption);
-      onClaimed?.();
+      if (classTypeOption === "maintain") { //notified if class type is unchanged/auto approve
+        onClaimed?.();
+      }
       handleCancel();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to claim request. Please try again.");

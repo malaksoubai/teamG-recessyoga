@@ -27,7 +27,8 @@ const classTypes = [
     "Strength & Conditioning"
 ];
 
-type NotificationPreference = "email" | "sms";
+// type NotificationPreference = "email" | "sms";
+type NotificationPreference = "email";
 
 export default function SignUpPage() {
     const router = useRouter();
@@ -41,15 +42,15 @@ export default function SignUpPage() {
     const [lastName, setLastName] = useState("");
     const [notificationPreference, setNotificationPreference] =
     useState<NotificationPreference>("email");
-    const [phoneNumber, setPhoneNumber] = useState("");
+    // const [phoneNumber, setPhoneNumber] = useState("");
     const [selectedClassTypes, setSelectedClassTypes] = useState<string[]>([]);
 
 
     const canContinueToStep2 = useMemo(() => {
         if (!email || !password || !firstName || !lastName) return false;
-        if (notificationPreference === "sms" && !phoneNumber) return false;
+        // if (notificationPreference === "sms" && !phoneNumber) return false;
         return true;
-    }, [email, password, firstName, lastName, notificationPreference, phoneNumber]);
+    },[email, password, firstName, lastName]);
 
     const toggleClassType = (type: string) => {
         setSelectedClassTypes((prev) =>
@@ -72,8 +73,8 @@ export default function SignUpPage() {
                     data: {
                         firstName,
                         lastName,
-                        phone: notificationPreference === "sms" ? phoneNumber : null,
-                        notificationPreference,
+                        // phone: notificationPreference === "sms" ? phoneNumber : null,
+                        notificationPreference: "email",
                         selectedClassTypeNames: selectedClassTypes,
                     },
                     emailRedirectTo: `${window.location.origin}/auth/callback`,
@@ -142,7 +143,7 @@ export default function SignUpPage() {
                         />
                     </div>
 
-                    <div>
+                    {/* <div>
                         <Label className="mb-3 block text-sm font-medium text-[#4b5049]">
                         Preferred Notification Method
                         </Label>
@@ -164,9 +165,9 @@ export default function SignUpPage() {
                             <Label htmlFor="notification-sms">Text Message</Label>
                         </div>
                         </RadioGroup>
-                    </div>
+                    </div> */}
 
-                    {notificationPreference === "sms" && (
+                    {/* {notificationPreference === "sms" && (
                         <InputField
                         id="phone-number"
                         label="Phone Number"
@@ -175,7 +176,7 @@ export default function SignUpPage() {
                         onChange={setPhoneNumber}
                         type="tel"
                         />
-                    )}
+                    )} */}
 
                     <div>
                         <Label className="mb-1 block text-sm font-medium text-[#4b5049]">
