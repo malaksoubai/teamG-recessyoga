@@ -185,5 +185,11 @@ export const coverageRequestRelations = relations(coverageRequests, ({ one }) =>
   requestedBy: one(profiles, {
     fields: [coverageRequests.requestedByInstructorId],
     references: [profiles.id],
+    relationName: 'requestedBy',     
+  }),
+  claimedBy: one(profiles, {
+    fields: [coverageRequests.claimedByInstructorId],
+    references: [profiles.id],
+    relationName: 'claimedBy',
   }),
 }))

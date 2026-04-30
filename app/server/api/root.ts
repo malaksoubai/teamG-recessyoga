@@ -7,9 +7,11 @@
 
 import { createCallerFactory, createTRPCRouter } from './trpc';
 import { profilesApiRouter } from './routers/profiles';
+import { coverageRequestsRouter } from './routers/coverageRequests';
 
 export const appRouter = createTRPCRouter({
   profiles: profilesApiRouter,
+  coverageRequests: coverageRequestsRouter,
 });
 
 /** Type used by the tRPC client — never import the router itself on the client. */

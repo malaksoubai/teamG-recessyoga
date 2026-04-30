@@ -28,6 +28,7 @@ const ALL_YOGA_STYLES = [
 ];
 
 export default function SpecializationsPage() {
+  const { data: profile } = trpc.profiles.getCurrentProfile.useQuery()
   const { data: qualifications, isLoading } = trpc.profiles.getMyQualifications.useQuery();
   const updateQualifications = trpc.profiles.updateQualifications.useMutation();
 

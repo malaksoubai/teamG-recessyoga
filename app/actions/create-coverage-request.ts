@@ -1,9 +1,9 @@
 "use server"
 
-import { db } from "@/app/db"
+import { db } from "@/app/server/db"
 import { coverageRequests } from "@/app/db/schema"
 import { notifySubRequest } from "@/app/notifications/notify-sub-request"
-import { createClient } from "@/app/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 
 export async function createCoverageRequest(formData: {
   studioLocation: string
@@ -13,8 +13,10 @@ export async function createCoverageRequest(formData: {
   classType: string
   comment: string
 }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) throw new Error("Not authenticated")
 
   const startAt = new Date(`${formData.date}T${formData.startTime}`)

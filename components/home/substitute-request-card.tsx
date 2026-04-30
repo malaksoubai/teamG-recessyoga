@@ -4,25 +4,111 @@ import {
   AlertCircle,
   Check,
   Clock,
+  ExternalLink,
   Info,
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SubstituteRequestMock } from "@/lib/mock-substitute-requests";
+import type { SubstituteRequestCardData } from "@/lib/substitute-requests";
 import { Button } from "../ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ClaimSubstituteModal from "@/components/claim-sub-model"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type SubstituteRequestCardProps = {
-  request: SubstituteRequestMock;
+  request: SubstituteRequestCardData;
+  onClaimed?: () => void;
 };
 
-export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
-  const [claimOpen, setClaimOpen] = useState(false)  
+function ClaimConfirmationDialog({
+  open,
+  onClose,
+  isPending,
+}: {
+  open: boolean;
+  onClose: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-sm bg-white rounded-2xl shadow-xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <div className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+              isPending ? "bg-amber-100" : "bg-[#e8f0e8]"
+            )}>
+              <Check className={cn("h-4 w-4", isPending ? "text-amber-600" : "text-[#1e461f]")} />
+            </div>
+            {isPending ? "Claim Submitted for Approval" : "Class Claimed!"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-1">
+          {isPending ? (
+            <p className="text-sm text-gray-600">
+              Your claim is <span className="font-medium text-amber-700">pending administrator approval</span> due to the class type change request. You will be notified once it is approved.
+            </p>
+          ) : (
+            <p className="text-sm text-gray-600">
+              You have successfully claimed this substitute shift. You&apos;re all set!
+            </p>
+          )}
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+            <div className="flex items-start gap-2.5">
+              <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  Action required: Update MindBody
+                </p>
+                <p className="mt-0.5 text-xs text-amber-700">
+                  {isPending
+                    ? "Once your claim is approved, remember to log this pick-up shift in MindBody."
+                    : "Remember to log this pick-up shift in MindBody so it appears on the schedule."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={onClose}
+            className="w-full rounded-xl bg-[#1e461f] text-white hover:opacity-90"
+          >
+            Got it
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function SubstituteRequestCard({ request, onClaimed }: SubstituteRequestCardProps) {
+  const [claimOpen, setClaimOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [claimedAsPending, setClaimedAsPending] = useState(false)
+
   const topBorder =
     request.borderTop === "urgent" ? "border-t-[#880808]" : "border-t-[#1e461f]";
 
-  const [status, setStatus] = useState<"idle" | "pending" | "claimed">("idle")
+  const initialStatus =
+    request.dbStatus === "pending_approval" ? "pending"
+    : request.dbStatus === "claimed" ? "claimed"
+    : "idle"
+  const [status, setStatus] = useState<"idle" | "pending" | "claimed">(initialStatus)
+
+  useEffect(() => {
+    setStatus(
+      request.dbStatus === "pending_approval" ? "pending"
+      : request.dbStatus === "claimed" ? "claimed"
+      : "idle"
+    )
+  }, [request.dbStatus])
 
   return (
     <article
@@ -94,14 +180,6 @@ export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
           </div>
         ) : null}
 
-        {/* <Button
-          onClick={() => setClaimOpen(true)}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          <Check className="size-4" aria-hidden />
-          Claim Substitute
-        </Button> */}
-
         <Button
           onClick={() => status === "idle" && setClaimOpen(true)}
           disabled={status !== "idle"}
@@ -121,19 +199,35 @@ export function SubstituteRequestCard({ request }: SubstituteRequestCardProps) {
         <ClaimSubstituteModal
           open={claimOpen}
           onOpenChange={setClaimOpen}
-          onClaim={(classTypeOption) => setStatus(classTypeOption === "change" ? "pending" : "claimed")}
+          onClaim={(classTypeOption) => {
+            const isPending = classTypeOption === "change"
+            setStatus(isPending ? "pending" : "claimed")
+            setClaimedAsPending(isPending)
+            setConfirmOpen(true)
+            // onClaimed (refetch) is intentionally deferred to dialog close —
+            // calling it here would remove the card from the list before the
+            // popup renders.
+          }}
           subRequest={{
             id: request.id,
             requestedBy: request.requestedBy,
-            date: request.dateTime,
-            time: request.dateTime,
+            date: request.modalCalendarDate,
+            time: request.modalTimeRange,
             location: request.location,
             classType: request.title,
             teacherNotes: request.note,
-            urgency: request.urgency?.kind === "urgent" ? "less-than-24h" : "over-week",
+            urgency: request.claimModalUrgency,
           }}
         />
 
+        <ClaimConfirmationDialog
+          open={confirmOpen}
+          onClose={() => {
+            setConfirmOpen(false)
+            onClaimed?.()
+          }}
+          isPending={claimedAsPending}
+        />
       </div>
     </article>
   );
