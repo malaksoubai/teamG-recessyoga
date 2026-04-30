@@ -25,8 +25,8 @@ export default function NotificationPage() {
   const updateNotificationPreference = trpc.profiles.updateNotificationPreference.useMutation();
   const utils = trpc.useUtils();
   const [emailEnabled, setEmailEnabled] = useState(false);
-  const [smsEnabled, setSmsEnabled] = useState(false);
-  const [phone, setPhone] = useState("");
+  // const [smsEnabled, setSmsEnabled] = useState(false);
+  // const [phone, setPhone] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -34,8 +34,8 @@ export default function NotificationPage() {
     if (profile) {
       const pref = profile.notificationPreference;
       setEmailEnabled(pref === "email");
-      setSmsEnabled(pref === "sms");
-      setPhone(profile.phone ?? "");
+      // setSmsEnabled(pref === "sms");
+      // setPhone(profile.phone ?? "");
     }
   }, [profile]);
 
@@ -43,17 +43,19 @@ export default function NotificationPage() {
     setSaveError(null);
     setSaveSuccess(false);
 
-    const preference = smsEnabled ? "sms" : "email";
+    const preference = "email";
+    // const preference = smsEnabled ? "sms" : "email";
 
-    if (smsEnabled && !phone.trim()) {
-      setSaveError("Please enter a phone number for SMS notifications.");
-      return;
-    }
+    // if (smsEnabled && !phone.trim()) {
+    //   setSaveError("Please enter a phone number for SMS notifications.");
+    //   return;
+    // }
 
     try {
       await updateNotificationPreference.mutateAsync({
         notificationPreference: preference,
-        phone: smsEnabled ? phone.trim() : null,
+        phone: null,
+        // phone: smsEnabled ? phone.trim() : null,
       });
 
       await utils.profiles.getCurrentProfile.invalidate();
@@ -116,15 +118,13 @@ export default function NotificationPage() {
                     <Checkbox
                       checked={emailEnabled}
                       onCheckedChange={(value) => {
-                        const v = !!value;
-                        setEmailEnabled(v);
-                        if (v) setSmsEnabled(false);
+                        setEmailEnabled(!!value);
                       }}
                     />
                   </Field>
                 </FieldLabel>
-
-                <FieldLabel
+          {/* SMS disabled */}
+                {/* <FieldLabel
                   className={`p-2 rounded-xl border transition-all ${
                     smsEnabled
                       ? "!border-[color:var(--secondary-foreground)] !bg-[color:var(--secondary)]"
@@ -179,7 +179,7 @@ export default function NotificationPage() {
                         </div>
                       </>
                     )}
-                </FieldLabel>
+                </FieldLabel> */}
 
                 {saveError && <p className="text-sm text-red-500">{saveError}</p>}
                 {saveSuccess && <p className="text-sm text-green-600">Changes saved!</p>}
