@@ -5,6 +5,7 @@ import { db } from '@/app/server/db';
 import { coverageRequests, locations, classTypes } from '@/app/db/schema';
 import { eq, and, gt, aliasedTable } from 'drizzle-orm';
 import { notifySubRequest } from '@/app/notifications/notify-sub-request';
+import { notifySubClaim } from '@/app/notifications/notify-sub-claim';
 
 const getLocations = protectedProcedure
   .output(z.array(z.object({ id: z.number(), name: z.string() })))
@@ -108,14 +109,18 @@ const claimRequest = protectedProcedure
         })
         .where(eq(coverageRequests.id, input.requestId));
     } else {
-      await db
+      const [updatedRequest] = await db
         .update(coverageRequests)
         .set({
           claimedByInstructorId: subject.id,
           status: 'claimed',
           updatedAt: new Date(),
         })
-        .where(eq(coverageRequests.id, input.requestId));
+        .where(eq(coverageRequests.id, input.requestId))
+        .returning()
+      notifySubClaim(updatedRequest.id).catch((err) =>
+        console.error('Failed to send claim notification:', err)
+      )  
     }
 
     return { success: true };

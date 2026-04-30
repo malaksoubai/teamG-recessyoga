@@ -147,9 +147,9 @@ async function sendToAll(
   await Promise.all(
     recipients.map((r) =>
       resend.emails.send({
-        from: 'Recess Yoga <noreply@yourdomain.com>',
-        to: r.email,
-        subject: `Sub needed: ${data.classType} on ${data.date}`,
+        from: "onboarding@resend.dev",
+        to:  "malaksoubai03@gmail.com", //r.email,
+        subject: `Sub needed: ${data.classType} on ${data.date}. This email would go to: ${r.email}`,
         html: buildEmailHtml({ ...data, firstName: r.firstName }),
       })
     )
