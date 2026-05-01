@@ -1,0 +1,35 @@
+name: Tests
+
+on:
+  push:
+    branches: [main] 
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npx vitest run
+        env:
+          # Dummy values so env references don't crash during tests
+          # Real values are never needed — all SDKs are mocked
+          RESEND_API_KEY: test_placeholder
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
