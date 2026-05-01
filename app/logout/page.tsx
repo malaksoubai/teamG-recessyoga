@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/client"
+import { getQueryClient } from "@/lib/trpc/provider"
 
 export default function LogoutPage() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export default function LogoutPage() {
       try {
         const supabase = createClient()
         await supabase.auth.signOut()
+        getQueryClient().clear()
       } catch {
         // Still show signed-out UI; session may already be cleared
       } finally {

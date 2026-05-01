@@ -1,7 +1,7 @@
 "use client"
 
 import { Plus, ExternalLink, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header";
 import { TeacherHomeBadges } from "@/components/home/teacher-home-badges";
@@ -14,10 +14,31 @@ import { trpc } from "@/lib/trpc/client";
 export function TeacherHomeScreen() {
   const [requestOpen, setRequestOpen] = useState(false)
   const { items, status, urgentCount, openCount, refetch } = useOpenSubstituteRequests()
+  const { data: profile } = trpc.profiles.getCurrentProfile.useQuery()
   const { data: approvedChanges = [] } = trpc.coverageRequests.getMyApprovedClassTypeChanges.useQuery()
   const [dismissedIds, setDismissedIds] = useState<number[]>([])
 
-  const visibleReminders = approvedChanges.filter((c) => !dismissedIds.includes(c.id))
+  useEffect(() => {
+    if (!profile?.id) return
+    try {
+      const stored = localStorage.getItem(`mindbody-dismissed-${profile.id}`)
+      if (stored) setDismissedIds(JSON.parse(stored))
+    } catch {}
+  }, [profile?.id])
+
+  const handleDismiss = (id: number) => {
+    if (!profile?.id) return
+    const next = [...dismissedIds, id]
+    setDismissedIds(next)
+    try {
+      localStorage.setItem(`mindbody-dismissed-${profile.id}`, JSON.stringify(next))
+    } catch {}
+  }
+
+  // Don't render until profile is loaded — dismissedIds depends on profile.id
+  const visibleReminders = profile
+    ? approvedChanges.filter((c) => !dismissedIds.includes(c.id))
+    : []
 
   return (
     <div className="min-h-screen w-full bg-[#ffffff] text-[#1b1b1b]">
@@ -50,7 +71,7 @@ export function TeacherHomeScreen() {
                   </span>
                 </div>
                 <button
-                  onClick={() => setDismissedIds((prev) => [...prev, claim.id])}
+                  onClick={() => handleDismiss(claim.id)}
                   className="ml-1 shrink-0 text-amber-500 hover:text-amber-700"
                   aria-label="Dismiss"
                 >
