@@ -38,11 +38,11 @@ export default function LoginPage() {
       })
       if (signInError) throw signInError
 
-      const result = await getCurrentProfile.refetch()
-      const profile = result.data
+      const profileResult = await getCurrentProfile.refetch()
+      const profile = profileResult.data
 
-      if (!profile) {
-        router.push("/sign-up")
+      if (profileResult.error || profile === undefined) {
+        router.push("/complete-profile")
       } else if (!profile.isActive && !profile.isAdmin) {
         router.push("/account-rejected")
       } else if (!profile.approved) {

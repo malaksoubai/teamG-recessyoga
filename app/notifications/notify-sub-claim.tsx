@@ -1,9 +1,7 @@
-import { Resend } from 'resend'
 import { db } from '@/app/server/db'
+import { getResendOrNull } from '@/lib/resend'
 import { coverageRequests } from '@/app/db/schema'
 import { eq } from 'drizzle-orm'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function notifySubClaim(coverageRequestId: number) {
   const request = await db.query.coverageRequests.findFirst({
@@ -28,6 +26,14 @@ export async function notifySubClaim(coverageRequestId: number) {
   const endTime = request.endAt.toLocaleTimeString('en-US', {
     hour: 'numeric', minute: '2-digit'
   })
+
+  const resend = getResendOrNull()
+  if (!resend) {
+    console.warn(
+      "notifySubClaim: RESEND_API_KEY not set; skipping coverage notification email.",
+    )
+    return
+  }
 
   await resend.emails.send({
     from: "subrequest@notifications.recessyogastudio.com",

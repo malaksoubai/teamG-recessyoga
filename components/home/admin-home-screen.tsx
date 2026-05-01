@@ -9,6 +9,7 @@ import { OpenSubstituteRequestsSection } from "@/components/home/open-substitute
 import { useOpenSubstituteRequests } from "@/hooks/use-open-substitute-requests"
 import RequestSubstituteModal from "@/components/request-sub-model"
 import { Button } from "@/components/ui/button"
+import { trpc } from "@/lib/trpc/client"
 
 export function AdminHomeScreen() {
   const [requestOpen, setRequestOpen] = useState(false)
@@ -21,6 +22,12 @@ export function AdminHomeScreen() {
     refetch,
   } = useOpenSubstituteRequests()
 
+  const pendingProfilesQuery = trpc.profiles.getPendingProfiles.useQuery(undefined, {
+    staleTime: 30_000,
+  })
+  const pendingAccountApprovalCount =
+    pendingProfilesQuery.data?.filter((p) => !p.isAdmin).length ?? 0
+
   return (
     <div className="min-h-screen w-full bg-[#f2f2f2] text-[#1b1b1b]">
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-12 pt-6 sm:px-6 lg:px-10 xl:px-12">
@@ -32,6 +39,8 @@ export function AdminHomeScreen() {
             pendingApprovalCount={pendingApprovalCount}
             openCount={openCount}
             loading={status === "loading"}
+            pendingAccountApprovalCount={pendingAccountApprovalCount}
+            pendingAccountApprovalsReady={!pendingProfilesQuery.isLoading}
           />
 
           <Button
