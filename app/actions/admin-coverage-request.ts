@@ -57,6 +57,7 @@ export async function denyClassTypeChange(requestId: number) {
       classTypeChangeStatus: "rejected",
       currentClassTypeId: row.originalClassTypeId,
       status: "open",
+      claimedByInstructorId: null,
       updatedAt: new Date(),
     })
     .where(
