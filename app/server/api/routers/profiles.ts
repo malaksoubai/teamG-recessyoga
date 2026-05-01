@@ -1,0 +1,355 @@
+/**
+ * tRPC router: profiles
+ *
+ * Procedures:
+ *  getCurrentProfile   – protectedProcedure – fetch the signed-in user's profile
+ *  createProfile       – protectedProcedure – insert profile + qualifications after sign-up
+ *  getPendingProfiles  – adminProcedure     – list all unapproved active profiles
+ *  approveProfile      – adminProcedure     – set approved + active for a profile
+ *  denyProfile         – adminProcedure     – deactivate profile (no app access)
+ *
+ * Handoff contract (frontend):
+ *  - After supabase.auth.signUp() succeeds, frontend calls createProfile.
+ *  - After login, frontend calls getCurrentProfile to determine redirect:
+ *      profile not found          → show "complete profile" page
+ *      profile.approved = false   → show "pending approval" page
+ *      profile.approved = true    → go to dashboard
+ */
+
+import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  adminProcedure,
+} from '../trpc';
+import { db } from '@/app/server/db';
+import {
+  profiles,
+  classTypes,
+  instructorQualifications,
+} from '@/app/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
+
+function profileRowToResponse(row: typeof profiles.$inferSelect) {
+  return ProfileResponse.parse({
+    ...row,
+    phone: row.phone ?? null,
+    bio: row.bio ?? null,
+  });
+}
+
+//  Zod schemas 
+
+const ProfileResponse = z.object({
+  id: z.string().uuid(),
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().email(),
+  phone: z.string().nullable(),
+  bio: z.string().nullable(),
+  isAdmin: z.boolean(),
+  approved: z.boolean(),
+  isActive: z.boolean(),
+  notificationPreference: z.enum(['email', 'sms']),
+  createdAt: z.date(),
+});
+
+const CreateProfileInput = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email'),
+  phone: z.string().optional(),
+  notificationPreference: z.enum(['email', 'sms']).default('email'),
+  /** Class type names selected during sign-up (e.g. "Vinyasa", "Yin"). */
+  selectedClassTypeNames: z.array(z.string()).default([]),
+});
+
+const ProfileIdInput = z.object({
+  profileId: z.string().uuid(),
+});
+
+//  getCurrentProfile 
+
+/**
+ * Returns the currently authenticated instructor's profile.
+ *
+ * Frontend uses the return value to decide where to redirect:
+ *  - approved = false → /pending-approval
+ *  - approved = true  → /dashboard (or home)
+ *
+ * Throws NOT_FOUND if the profile row doesn't exist yet (user just signed up
+ * with Supabase Auth but hasn't called createProfile yet).
+ */
+const getCurrentProfile = protectedProcedure
+  .output(ProfileResponse)
+  .query(async ({ ctx }) => {
+    const { subject } = ctx;
+
+    const profile = await db.query.profiles.findFirst({
+      where: eq(profiles.id, subject.id),
+    });
+
+    if (!profile) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found. Please complete your sign-up.',
+      });
+    }
+
+    return profileRowToResponse(profile);
+  });
+
+//  createProfile 
+
+/**
+ * Called by the frontend immediately after supabase.auth.signUp() succeeds.
+ *
+ * 1. Inserts a new row into `profiles` (approved = false by default — admin
+ *    must approve before the instructor can access the app).
+ * 2. For each selected class type name, looks up the matching row in
+ *    `class_types` and inserts a row into `instructor_qualifications`.
+ *    Class types not found in the DB are silently skipped.
+ *
+ * Idempotent: if the profile already exists, returns without error.
+ */
+const createProfile = protectedProcedure
+  .input(CreateProfileInput)
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      notificationPreference,
+      selectedClassTypeNames,
+    } = input;
+
+    // Idempotency guard — re-calling after a network retry should be safe.
+    const existing = await db.query.profiles.findFirst({
+      where: eq(profiles.id, subject.id),
+    });
+    if (existing) return;
+
+    // Insert the profile row.
+    await db.insert(profiles).values({
+      id: subject.id, // must match auth.users.id
+      firstName,
+      lastName,
+      email,
+      phone: phone ?? null,
+      notificationPreference,
+      approved: false, // admin approves after reviewing
+      isAdmin: false,
+      isActive: true,
+    });
+
+    // Resolve class type names → IDs and insert qualifications.
+    if (selectedClassTypeNames.length > 0) {
+      const classTypeRows = await db.query.classTypes.findMany();
+
+      const nameToId = new Map(
+        classTypeRows.map((ct) => [ct.name.toLowerCase(), ct.id])
+      );
+
+      const qualifications = selectedClassTypeNames
+        .map((name) => nameToId.get(name.toLowerCase()))
+        .filter((id): id is number => id !== undefined)
+        .map((classTypeId) => ({
+          instructorId: subject.id,
+          classTypeId,
+        }));
+
+      if (qualifications.length > 0) {
+        await db
+          .insert(instructorQualifications)
+          .values(qualifications)
+          .onConflictDoNothing(); // safe to retry
+      }
+    }
+  });
+
+//  getPendingProfiles 
+
+/**
+ * Admin only.
+ * Returns all instructor profiles that have not been approved yet.
+ * Used on the admin dashboard to review new sign-ups.
+ */
+const getPendingProfiles = adminProcedure
+  .output(ProfileResponse.array())
+  .query(async () => {
+    const pending = await db.query.profiles.findMany({
+      where: and(
+        eq(profiles.approved, false),
+        eq(profiles.isActive, true),
+        eq(profiles.isAdmin, false),
+      ),
+    });
+
+    return pending.map(profileRowToResponse);
+  });
+
+//  approveProfile 
+
+/**
+ * Admin only.
+ * Sets approved = true for the given profile ID.
+ * After this, the instructor can log in and access the app.
+ */
+const approveProfile = adminProcedure
+  .input(ProfileIdInput)
+  .mutation(async ({ input }) => {
+    const { profileId } = input;
+
+    const target = await db.query.profiles.findFirst({
+      where: eq(profiles.id, profileId),
+    });
+
+    if (!target) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found.',
+      });
+    }
+
+    await db
+      .update(profiles)
+      .set({ approved: true, isActive: true, updatedAt: new Date() })
+      .where(eq(profiles.id, profileId));
+  });
+
+//  denyProfile
+
+/**
+ * Admin only. Deactivates the profile so the user cannot use the app (login
+ * redirects to account rejected). Pending list only includes active rows.
+ */
+const denyProfile = adminProcedure
+  .input(ProfileIdInput)
+  .mutation(async ({ ctx, input }) => {
+    const { profileId } = input;
+    if (profileId === ctx.subject.id) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'You cannot deny your own account.',
+      });
+    }
+
+    const target = await db.query.profiles.findFirst({
+      where: eq(profiles.id, profileId),
+    });
+
+    if (!target) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Profile not found.',
+      });
+    }
+
+    if (target.isAdmin) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Cannot deny an administrator account.',
+      });
+    }
+
+    await db
+      .update(profiles)
+      .set({
+        approved: false,
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(profiles.id, profileId));
+  });
+
+//  updateProfile
+
+const updateProfile = protectedProcedure
+  .input(z.object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    email: z.string().email(),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+    await db
+      .update(profiles)
+      .set({ firstName: input.firstName, lastName: input.lastName, email: input.email, updatedAt: new Date() })
+      .where(eq(profiles.id, subject.id));
+  });
+
+//  updateNotificationPreference
+
+const updateNotificationPreference = protectedProcedure
+  .input(z.object({
+    notificationPreference: z.enum(['email', 'sms']),
+    phone: z.string().nullable(),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+    await db
+      .update(profiles)
+      .set({ notificationPreference: input.notificationPreference, phone: input.phone, updatedAt: new Date() })
+      .where(eq(profiles.id, subject.id));
+  });
+
+//  updateQualifications
+
+const updateQualifications = protectedProcedure
+  .input(z.object({
+    classTypeNames: z.array(z.string()),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    const { subject } = ctx;
+
+    const allClassTypes = await db.query.classTypes.findMany();
+    const nameToId = new Map(allClassTypes.map((ct) => [ct.name.trim().toLowerCase(), ct.id]));
+
+    const newIds = input.classTypeNames
+      .map((n) => nameToId.get(n.trim().toLowerCase()))
+      .filter((id): id is number => id !== undefined);
+
+    await db
+      .delete(instructorQualifications)
+      .where(eq(instructorQualifications.instructorId, subject.id));
+
+    if (newIds.length > 0) {
+      await db
+        .insert(instructorQualifications)
+        .values(newIds.map((classTypeId) => ({ instructorId: subject.id, classTypeId })))
+        .onConflictDoNothing();
+    }
+  });
+
+//  getMyQualifications
+
+const getMyQualifications = protectedProcedure
+  .output(z.array(z.string()))
+  .query(async ({ ctx }) => {
+    const { subject } = ctx;
+
+    const rows = await db
+      .select({ name: classTypes.name })
+      .from(instructorQualifications)
+      .innerJoin(classTypes, eq(instructorQualifications.classTypeId, classTypes.id))
+      .where(eq(instructorQualifications.instructorId, subject.id));
+
+    return rows.map((r) => r.name);
+  });
+
+//  Router
+
+export const profilesApiRouter = createTRPCRouter({
+  getCurrentProfile,
+  createProfile,
+  getPendingProfiles,
+  approveProfile,
+  denyProfile,
+  getMyQualifications,
+  updateProfile,
+  updateNotificationPreference,
+  updateQualifications,
+});
