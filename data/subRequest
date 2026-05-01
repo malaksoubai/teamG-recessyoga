@@ -1,6 +1,0 @@
-export type SubRequest = {
-  id: string;
-  yogaType: string;
-  classTime: string; // ISO string
-  claimed: boolean;
-};
