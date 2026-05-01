@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
-
-export const dynamic = "force-dynamic"
+import { UserProfileGateProvider } from "@/components/user-profile/user-profile-gate-provider"
 import { redirectPathForCurrentUserState } from "@/lib/post-login-redirect"
 import { resolveCurrentUserStateForUserId } from "@/lib/resolve-current-user-state"
+
+export const dynamic = "force-dynamic"
 
 export default async function UserProfileLayout({
   children,
@@ -22,5 +23,7 @@ export default async function UserProfileLayout({
     redirect(redirectPathForCurrentUserState(state))
   }
 
-  return children
+  const isAdmin = state === "admin"
+
+  return <UserProfileGateProvider isAdmin={isAdmin}>{children}</UserProfileGateProvider>
 }

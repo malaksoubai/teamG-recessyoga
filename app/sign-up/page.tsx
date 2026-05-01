@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { User, Check } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { syncAuthProfile } from "@/app/actions/sync-auth-profile";
 import { createClient } from "@/lib/supabase/client";
 
 const classTypes = [
@@ -31,7 +31,6 @@ const classTypes = [
 type NotificationPreference = "email";
 
 export default function SignUpPage() {
-    const router = useRouter();
     const [step, setStep] = useState<1 | 2>(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -60,13 +59,15 @@ export default function SignUpPage() {
         );
     };
 
-    // Called when "Continue" is clicked. It creates the Supabase auth account and attaches profile data as user metadata so the auth callback route can insert the profile after the user clicks the confirmation link in their email.
+    // Creates Supabase Auth + stores metadata on the user. After email confirmation,
+    // `/auth/callback` creates the `profiles` row. If the project returns a session
+    // immediately (no email confirm), we create the profile here too.
     const handleContinue = async () => {
         setIsLoading(true);
         setError(null);
         try {
             const supabase = createClient();
-            const { error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -81,6 +82,14 @@ export default function SignUpPage() {
                 },
             });
             if (error) throw error;
+            if (data.session?.user) {
+                const sync = await syncAuthProfile();
+                if (!sync.ok) {
+                    throw new Error(
+                        sync.error ?? "Could not create your studio profile.",
+                    );
+                }
+            }
             setStep(2);
         } catch (e: unknown) {
             setError(e instanceof Error ? e.message : "Something went wrong.");

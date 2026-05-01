@@ -37,6 +37,21 @@ const TIMELINE_BY_URGENCY: Record<
   "over-week": "Over 1 week out",
 }
 
+function coverageStatusLabel(dbStatus: string): string {
+  switch (dbStatus) {
+    case "open":
+      return "Still open"
+    case "pending_approval":
+      return "Pending approval"
+    case "claimed":
+      return "Claimed"
+    case "approved":
+      return "Approved"
+    default:
+      return dbStatus.replace(/_/g, " ")
+  }
+}
+
 function adminTimeline(request: SubstituteRequestCardData) {
   if (request.urgency) {
     return {
@@ -87,6 +102,12 @@ export function AdminSubstituteRequestCard({
   const classChangeDisplay = request.classChangeSummary?.includes("->")
     ? request.classChangeSummary.replace("->", "→")
     : request.classChangeSummary
+
+  const showClaimerInDetails =
+    Boolean(request.claimedByDisplayName) &&
+    (request.dbStatus === "claimed" ||
+      request.dbStatus === "pending_approval" ||
+      request.dbStatus === "approved")
 
   return (
     <article
@@ -198,11 +219,31 @@ export function AdminSubstituteRequestCard({
           <DialogHeader>
             <DialogTitle className="font-heading">{request.title}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 text-left text-sm text-[#374151]">
-            <p>Requested by {request.requestedBy}</p>
-            <p>{request.dateTime}</p>
-            <p>{request.location}</p>
-            {request.note ? <p className="italic">Note: {request.note}</p> : null}
+          <div className="space-y-4 text-left text-sm text-[#374151]">
+            <div>
+              <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-[#6b6b6b]">
+                Status
+              </p>
+              <p className="mt-1 font-semibold text-[#1b1b1b]">
+                {coverageStatusLabel(request.dbStatus)}
+              </p>
+            </div>
+            {showClaimerInDetails ? (
+              <div>
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-[#6b6b6b]">
+                  {request.dbStatus === "pending_approval"
+                    ? "Claimed by (awaiting approval)"
+                    : "Claimed by"}
+                </p>
+                <p className="mt-1 text-[#1b1b1b]">{request.claimedByDisplayName}</p>
+              </div>
+            ) : null}
+            <div className="space-y-2 border-t border-[#e8e8e8] pt-3">
+              <p>Requested by {request.requestedBy}</p>
+              <p>{request.dateTime}</p>
+              <p>{request.location}</p>
+              {request.note ? <p className="italic">Note: {request.note}</p> : null}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

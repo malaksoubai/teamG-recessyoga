@@ -1,6 +1,6 @@
 import "server-only"
 
-import { aliasedTable, desc, eq, inArray } from "drizzle-orm"
+import { aliasedTable, and, eq, gt, or } from "drizzle-orm"
 
 import { db, schema } from "@/app/server/db"
 
@@ -32,6 +32,8 @@ export type SubstituteRequestCardData = {
   modalTimeRange: string
   /** Raw DB status — used to initialise the card's button state. */
   dbStatus: string
+  /** Present when someone has claimed (or pending approval with a claimer). */
+  claimedByDisplayName?: string | null
 }
 
 function formatDateTime(dateValue: Date | string | null): string {
@@ -121,11 +123,56 @@ function buildClaimModalUrgency(startAt: Date | string | null): ClaimModalUrgenc
   return "over-week"
 }
 
+/** Home list: urgent (<24h) first, then <72h, then rest; within each tier, soonest class first. */
+function sortRowsForHomeList(
+  rows: {
+    startAt: Date | null
+    urgency: SubstituteRequestCardData["urgency"]
+    card: SubstituteRequestCardData
+  }[]
+) {
+  const tier = (u: SubstituteRequestCardData["urgency"]) => {
+    if (u?.kind === "urgent") return 0
+    if (u?.kind === "within72") return 1
+    return 2
+  }
+
+  rows.sort((a, b) => {
+    const ta = tier(a.urgency)
+    const tb = tier(b.urgency)
+    if (ta !== tb) return ta - tb
+    const aMs = a.startAt ? new Date(a.startAt).getTime() : 0
+    const bMs = b.startAt ? new Date(b.startAt).getTime() : 0
+    return aMs - bMs
+  })
+}
+
+/** Drizzle loses select row typing on this join + `or` + `gt` chain (TS `never`). */
+type SubstituteRequestHomeRow = {
+  id: number
+  reason: string | null
+  status: string
+  classTypeChangeStatus: string
+  startAt: Date
+  endAt: Date
+  requestedByFirstName: string
+  requestedByLastName: string
+  claimerFirstName: string | null
+  claimerLastName: string | null
+  locationName: string | null
+  originalClassTypeName: string | null
+  currentClassTypeName: string | null
+}
+
 export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCardData[]> {
   const currentClassType = aliasedTable(schema.classTypes, "current_class_type")
   const originalClassType = aliasedTable(schema.classTypes, "original_class_type")
+  const claimerProfile = aliasedTable(schema.profiles, "claimer_profile")
 
-  const rows = await db
+  /** Same as `start_at + interval '60 days' > now()` — hide card after 60 days past class. */
+  const hideIfStartBefore = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+
+  const rows = (await db
     .select({
       id: schema.coverageRequests.id,
       reason: schema.coverageRequests.reason,
@@ -135,6 +182,8 @@ export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCard
       endAt: schema.coverageRequests.endAt,
       requestedByFirstName: schema.profiles.firstName,
       requestedByLastName: schema.profiles.lastName,
+      claimerFirstName: claimerProfile.firstName,
+      claimerLastName: claimerProfile.lastName,
       locationName: schema.locations.name,
       originalClassTypeName: originalClassType.name,
       currentClassTypeName: currentClassType.name,
@@ -143,6 +192,10 @@ export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCard
     .innerJoin(
       schema.profiles,
       eq(schema.coverageRequests.requestedByInstructorId, schema.profiles.id)
+    )
+    .leftJoin(
+      claimerProfile,
+      eq(schema.coverageRequests.claimedByInstructorId, claimerProfile.id)
     )
     .innerJoin(schema.locations, eq(schema.coverageRequests.locationId, schema.locations.id))
     .innerJoin(
@@ -153,10 +206,19 @@ export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCard
       originalClassType,
       eq(schema.coverageRequests.originalClassTypeId, originalClassType.id)
     )
-    .where(inArray(schema.coverageRequests.status, ["open", "pending_approval"]))
-    .orderBy(desc(schema.coverageRequests.startAt))
+    .where(
+      and(
+        or(
+          eq(schema.coverageRequests.status, "open"),
+          eq(schema.coverageRequests.status, "pending_approval"),
+          eq(schema.coverageRequests.status, "claimed"),
+          eq(schema.coverageRequests.status, "approved"),
+        ),
+        gt(schema.coverageRequests.startAt, hideIfStartBefore),
+      )
+    )) as SubstituteRequestHomeRow[]
 
-  return rows.map((row) => {
+  const withSort = rows.map((row) => {
     const urgency = buildUrgency(row.startAt)
     const classChangeSummary =
       row.originalClassTypeName &&
@@ -165,7 +227,12 @@ export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCard
         ? `${row.originalClassTypeName} -> ${row.currentClassTypeName}`
         : undefined
 
-    return {
+    const claimedByDisplayName =
+      row.claimerFirstName || row.claimerLastName
+        ? buildRequestedBy(row.claimerFirstName, row.claimerLastName)
+        : null
+
+    const card: SubstituteRequestCardData = {
       id: String(row.id),
       title: row.currentClassTypeName || "Class",
       requestedBy: buildRequestedBy(row.requestedByFirstName, row.requestedByLastName),
@@ -181,6 +248,11 @@ export async function getOpenSubstituteRequests(): Promise<SubstituteRequestCard
       modalCalendarDate: formatCalendarDate(row.startAt),
       modalTimeRange: formatTimeRange(row.startAt, row.endAt),
       dbStatus: row.status,
+      claimedByDisplayName,
     }
+    return { startAt: row.startAt, urgency, card }
   })
+
+  sortRowsForHomeList(withSort)
+  return withSort.map((x) => x.card)
 }

@@ -46,7 +46,8 @@ export function useOpenSubstituteRequests() {
   }, [loadRequests])
 
   const urgentCount = items.filter((r) => r.urgency?.kind === "urgent").length
-  const openCount = items.length
+  /** Shifts still available to claim (excludes claimed / approved / pending approval). */
+  const openCount = items.filter((r) => r.dbStatus === "open").length
   const pendingApprovalCount = items.filter((r) => r.needsApproval).length
 
   const refetch = useCallback(() => loadRequests("silent"), [loadRequests])

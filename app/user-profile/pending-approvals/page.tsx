@@ -4,6 +4,7 @@ import { useState } from "react"
 import { UserCheck } from "lucide-react"
 
 import { TeacherHomeHeader } from "@/components/home/teacher-home-header"
+import { useUserProfileGate } from "@/components/user-profile/user-profile-gate-provider"
 import { UserProfileSidebar } from "@/components/user-profile/user-profile-sidebar"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,10 +18,14 @@ import { Separator } from "@/components/ui/separator"
 import { trpc } from "@/lib/trpc/client"
 
 export default function PendingApprovalsPage() {
-  const { data: profile, isLoading: profileLoading } =
-    trpc.profiles.getCurrentProfile.useQuery()
-  const { data: pending, isLoading: listLoading, refetch } =
-    trpc.profiles.getPendingProfiles.useQuery()
+  const { isAdmin } = useUserProfileGate()
+  const {
+    data: pending,
+    isLoading: listLoading,
+    isError: listError,
+    error: listErrorDetail,
+    refetch,
+  } = trpc.profiles.getPendingProfiles.useQuery()
   const approve = trpc.profiles.approveProfile.useMutation()
   const deny = trpc.profiles.denyProfile.useMutation()
   const [actionError, setActionError] = useState<string | null>(null)
@@ -54,10 +59,7 @@ export default function PendingApprovalsPage() {
       </div>
 
       <div className="flex gap-6 p-8 pt-4">
-        <UserProfileSidebar
-          active="pending-approvals"
-          isAdmin={!!profile?.isAdmin}
-        />
+        <UserProfileSidebar active="pending-approvals" isAdmin={isAdmin} />
 
         <Card className="flex-1 w-4xl h-fit">
           <CardHeader className="text-[color:var(--secondary-foreground)] flex gap-4 w-full justify-center md:justify-start">
@@ -81,7 +83,14 @@ export default function PendingApprovalsPage() {
               </p>
             ) : null}
 
-            {profileLoading || listLoading ? (
+            {listError ? (
+              <p className="text-sm text-red-600 py-4" role="alert">
+                Could not load pending sign-ups
+                {listErrorDetail?.message
+                  ? `: ${listErrorDetail.message}`
+                  : "."}
+              </p>
+            ) : listLoading ? (
               <p className="text-sm text-muted-foreground py-4">Loading…</p>
             ) : !pending?.length ? (
               <p className="text-sm text-muted-foreground py-4">

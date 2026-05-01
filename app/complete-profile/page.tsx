@@ -2,10 +2,11 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
-
-export const dynamic = "force-dynamic"
+import { ensureProfileForAuthUser } from "@/lib/ensure-profile-from-auth-user"
 import { redirectPathForCurrentUserState } from "@/lib/post-login-redirect"
 import { resolveCurrentUserStateForUserId } from "@/lib/resolve-current-user-state"
+
+export const dynamic = "force-dynamic"
 
 export default async function CompleteProfilePage() {
   const supabase = await createClient()
@@ -13,6 +14,12 @@ export default async function CompleteProfilePage() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
+
+  try {
+    await ensureProfileForAuthUser(user)
+  } catch (err) {
+    console.error("complete-profile ensureProfileForAuthUser:", err)
+  }
 
   const state = await resolveCurrentUserStateForUserId(user.id)
   if (state !== "no_profile") {

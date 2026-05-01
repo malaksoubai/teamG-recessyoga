@@ -2,9 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { User, Bell, Award, UserCheck } from "lucide-react"
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { User, Bell, Award } from "lucide-react"
+import { useUserProfileGate } from "@/components/user-profile/user-profile-gate-provider"
 
 const items = [
   {
@@ -25,10 +27,13 @@ const items = [
     href: "/user-profile/specializations",
     icon: Award,
   },
-]
+] as const
+
+const pendingApprovalsHref = "/user-profile/pending-approvals" as const
 
 export function ProfileSidebar() {
   const pathname = usePathname()
+  const { isAdmin } = useUserProfileGate()
 
   return (
     <Card className="w-64 shrink-0 h-fit transition-all">
@@ -64,6 +69,30 @@ export function ProfileSidebar() {
             </Button>
           )
         })}
+
+        {isAdmin ? (
+          <Button
+            variant={pathname === pendingApprovalsHref ? "secondary" : "ghost"}
+            className={`w-full justify-center md:justify-start gap-3 py-4 md:py-8 ${
+              pathname === pendingApprovalsHref
+                ? "border-l-2 border-l-[var(--secondary-foreground)]"
+                : ""
+            }`}
+            asChild
+          >
+            <Link href={pendingApprovalsHref} className="flex w-full items-center gap-3">
+              <div className="flex items-center justify-center bg-[color:var(--secondary-foreground)] rounded-lg p-2">
+                <UserCheck color="white" />
+              </div>
+              <div className="hidden md:flex flex-col items-start leading-tight min-w-0 flex-1">
+                <span className="font-medium">Pending approvals</span>
+                <span className="text-xs text-muted-foreground text-wrap text-start">
+                  Review new instructor sign-ups
+                </span>
+              </div>
+            </Link>
+          </Button>
+        ) : null}
 
       </CardContent>
     </Card>

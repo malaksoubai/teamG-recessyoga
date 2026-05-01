@@ -1,13 +1,11 @@
-import { Resend } from 'resend'
 import { db } from '@/app/server/db'
+import { getResendOrNull } from '@/lib/resend'
 import {
   profiles,
   coverageRequests,
   instructorQualifications,
 } from '@/app/db/schema'
 import { eq, and, ne, inArray } from 'drizzle-orm'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 type UrgencyLevel = 'less-than-24h' | 'within-72h' | 'within-week' | 'over-week'
 
@@ -144,6 +142,13 @@ async function sendToAll(
   data: Omit<Parameters<typeof buildEmailHtml>[0], 'firstName'>
 ) {
   if (recipients.length === 0) return
+  const resend = getResendOrNull()
+  if (!resend) {
+    console.warn(
+      "notifySubRequest: RESEND_API_KEY not set; skipping instructor notification emails.",
+    )
+    return
+  }
   await Promise.all(
     recipients.map((r) =>
       resend.emails.send({

@@ -97,16 +97,20 @@ export function SubstituteRequestCard({ request, onClaimed }: SubstituteRequestC
     request.borderTop === "urgent" ? "border-t-[#880808]" : "border-t-[#1e461f]";
 
   const initialStatus =
-    request.dbStatus === "pending_approval" ? "pending"
-    : request.dbStatus === "claimed" ? "claimed"
-    : "idle"
+    request.dbStatus === "pending_approval"
+      ? "pending"
+      : request.dbStatus === "claimed" || request.dbStatus === "approved"
+        ? "claimed"
+        : "idle"
   const [status, setStatus] = useState<"idle" | "pending" | "claimed">(initialStatus)
 
   useEffect(() => {
     setStatus(
-      request.dbStatus === "pending_approval" ? "pending"
-      : request.dbStatus === "claimed" ? "claimed"
-      : "idle"
+      request.dbStatus === "pending_approval"
+        ? "pending"
+        : request.dbStatus === "claimed" || request.dbStatus === "approved"
+          ? "claimed"
+          : "idle",
     )
   }, [request.dbStatus])
 
@@ -187,13 +191,17 @@ export function SubstituteRequestCard({ request, onClaimed }: SubstituteRequestC
             "mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-opacity",
             status === "idle" && "bg-black text-white hover:opacity-90",
             status === "pending" && "bg-amber-100 text-amber-700 cursor-not-allowed",
-            status === "claimed" && "bg-[#1e461f] text-white cursor-not-allowed",
+            status === "claimed" &&
+              "cursor-not-allowed bg-[#e8ebe6] text-[#3d453d] hover:bg-[#e8ebe6]",
           )}
         >
-          <Check className="size-4" aria-hidden />
+          <Check className="size-4 shrink-0" aria-hidden />
           {status === "idle" && "Claim Substitute"}
           {status === "pending" && "Pending Approval"}
-          {status === "claimed" && "Substitute Claimed"}
+          {status === "claimed" &&
+            (request.claimedByDisplayName
+              ? `Claimed by ${request.claimedByDisplayName}`
+              : "Claimed")}
         </Button>
 
         <ClaimSubstituteModal

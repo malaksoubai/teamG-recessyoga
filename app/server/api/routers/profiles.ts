@@ -31,6 +31,14 @@ import {
 } from '@/app/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 
+function profileRowToResponse(row: typeof profiles.$inferSelect) {
+  return ProfileResponse.parse({
+    ...row,
+    phone: row.phone ?? null,
+    bio: row.bio ?? null,
+  });
+}
+
 //  Zod schemas 
 
 const ProfileResponse = z.object({
@@ -89,7 +97,7 @@ const getCurrentProfile = protectedProcedure
       });
     }
 
-    return ProfileResponse.parse(profile);
+    return profileRowToResponse(profile);
   });
 
 //  createProfile 
@@ -173,10 +181,14 @@ const getPendingProfiles = adminProcedure
   .output(ProfileResponse.array())
   .query(async () => {
     const pending = await db.query.profiles.findMany({
-      where: and(eq(profiles.approved, false), eq(profiles.isActive, true)),
+      where: and(
+        eq(profiles.approved, false),
+        eq(profiles.isActive, true),
+        eq(profiles.isAdmin, false),
+      ),
     });
 
-    return ProfileResponse.array().parse(pending);
+    return pending.map(profileRowToResponse);
   });
 
 //  approveProfile 
